@@ -4,15 +4,27 @@
 __author__ = 'shede333'
 """
 
+import json
+from datetime import timedelta
+from urllib.parse import urljoin, urlencode
+
 import jwt
 import requests
-from pathlib import Path
-from datetime import datetime, timedelta
-from enum import Enum
 
-import json
+from models import *
 
 BASE_API = "https://api.appstoreconnect.apple.com"
+
+
+def create_full_url(path: str, params: dict = None) -> str:
+    """
+    创建完整的url
+    """
+    url = urljoin(BASE_API, path)
+    if params:
+        return urljoin(url, urlencode(params))
+    else:
+        return url
 
 
 class TokenManager:
@@ -117,7 +129,13 @@ class APIAgent:
         except requests.exceptions.Timeout:
             raise APIError(f"Read timeout after {self.timeout} seconds")
 
+        result.raise_for_status()
         json_info = result.json()
+        if 'errors' in json_info:
+            error_info = json_info['errors'][0]
+            raise APIError(str(error_info))
+
+        return json_info
 
     def create_a_profile(self):
         pass
@@ -128,13 +146,51 @@ class APIAgent:
     def update_a_profile(self):
         pass
 
-    def list_profiles(self):
-        pass
+    def list_profiles(self) -> list[ProfileModel]:
+        """
+        mobileprovision列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_profiles
+        """
+        endpoint = '/v1/profiles'
+        params = {
+            'limit': 200
+        }
+        url = create_full_url(endpoint, params)
+        result_dict = self._api_call(url)
+        model_list = []
+        for tmp_dict in result_dict['data']:
+            model_list.append(ProfileModel(tmp_dict))
+        return model_list
 
-    def list_devices(self):
-        pass
+    def list_devices(self) -> list[DeviceModel]:
+        """
+        设备列表，仅包含有效状态的设备
+        https://developer.apple.com/documentation/appstoreconnectapi/list_devices
+        """
+        endpoint = '/v1/devices'
+        params = {
+            'limit': 200,
+            'filter[status]': DeviceStatus.ENABLED,
+            'filter[platform]': BundleIdPlatform.IOS
+        }
+        url = create_full_url(endpoint, params)
+        result_dict = self._api_call(url)
+        model_list = []
+        for tmp_dict in result_dict['data']:
+            model_list.append(DeviceModel(tmp_dict))
+        return model_list
 
-    def register_a_device(self):
-        pass
-
-
+    def register_a_device(self, device_info: DeviceCreateReqAttrs):
+        """
+        注册一个设备
+        https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_device
+        """
+        endpoint = '/v1/devices'
+        url = create_full_url(endpoint)
+        post_data = {
+            'data': {
+                'attributes': device_info._asdict(),
+                'type': 'devices'
+            }
+        }
+        self._api_call(url, method=HttpMethod.POST, post_data=post_data)

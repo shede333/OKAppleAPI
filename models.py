@@ -4,10 +4,11 @@
 __author__ = 'shede333'
 """
 
-from enum import Enum, auto
 import base64
-from pathlib import Path
+from collections import namedtuple
 from datetime import datetime
+from enum import Enum, auto
+from pathlib import Path
 
 
 class EnumAutoName(Enum):
@@ -123,3 +124,8 @@ class ProfileModel:
         content = base64.b64decode(self.profile_content)
         file_path.write_bytes(content)
         return file_path
+
+
+# 创建设备时的请求参数属性
+DeviceCreateReqAttrs = namedtuple('DeviceCreateReqAttrs', 'name, udid, platform',
+                                  defaults=[BundleIdPlatform.IOS])
