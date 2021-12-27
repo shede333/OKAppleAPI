@@ -140,16 +140,24 @@ class APIAgent:
     def create_a_profile(self):
         pass
 
-    def delete_a_profile(self):
-        pass
+    def delete_a_profile(self, profile_id: str):
+        """
+        删除一个profile证书
+        @param profile_id: 证书ID
+        @return:
+        """
+        endpoint = f'/v1/profiles/{profile_id}'
+        url = create_full_url(endpoint)
+        self._api_call(url, method=HttpMethod.DELETE)
 
-    def update_a_profile(self):
+    def update_a_profile(self, src_profile: ProfileModel):
         pass
 
     def list_profiles(self) -> list[ProfileModel]:
         """
-        mobileprovision列表
+        profile(mobileprovision)列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_profiles
+        @return:
         """
         endpoint = '/v1/profiles'
         params = {
@@ -166,6 +174,7 @@ class APIAgent:
         """
         设备列表，仅包含有效状态的设备
         https://developer.apple.com/documentation/appstoreconnectapi/list_devices
+        @return:
         """
         endpoint = '/v1/devices'
         params = {
@@ -184,6 +193,8 @@ class APIAgent:
         """
         注册一个设备
         https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_device
+        @param device_info: 设备信息model
+        @return:
         """
         endpoint = '/v1/devices'
         url = create_full_url(endpoint)
