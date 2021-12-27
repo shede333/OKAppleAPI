@@ -6,6 +6,7 @@ __author__ = 'shede333'
 
 import json
 from datetime import timedelta
+from pprint import pprint
 from urllib.parse import urljoin, urlencode
 
 import jwt
@@ -14,15 +15,20 @@ import requests
 from models import *
 
 BASE_API = "https://api.appstoreconnect.apple.com"
+MAX_LIMIT = 200
 
 
-def create_full_url(path: str, params: dict = None) -> str:
+def create_full_url(path: str, params: dict = None, filters: dict = None) -> str:
     """
     创建完整的url
     """
     url = urljoin(BASE_API, path)
+    params = params.copy() if params else {}
+    if filters:
+        for tmp_key, tmp_value in filters:
+            params[f'filter[tmp_key]'] = tmp_value
     if params:
-        return urljoin(url, urlencode(params))
+        return f'{url}?{urlencode(params)}'
     else:
         return url
 
@@ -137,6 +143,42 @@ class APIAgent:
 
         return json_info
 
+    def list_bundle_id(self, filters: dict = None):
+        """
+        bundle id 列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_bundle_ids
+        @param filters: 筛选器
+        @return:
+        """
+        endpoint = '/v1/bundleIds'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url)
+        model_list = []
+        for tmp_dict in result_dict.get('data', []):
+            model_list.append(BundleId(tmp_dict))
+        return model_list
+
+    def list_certificates(self, filters: dict = None):
+        """
+        certificate列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_certificates
+        @param filters: 筛选器
+        @return:
+        """
+        endpoint = '/v1/certificates'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url)
+        model_list = []
+        for tmp_dict in result_dict.get('data', []):
+            model_list.append(Certificate(tmp_dict))
+        return model_list
+
     def create_a_profile(self):
         pass
 
@@ -150,39 +192,42 @@ class APIAgent:
         url = create_full_url(endpoint)
         self._api_call(url, method=HttpMethod.DELETE)
 
-    def update_a_profile(self, src_profile: ProfileModel):
+    def update_a_profile(self, src_profile: ProfileAttributes):
         pass
 
-    def list_profiles(self) -> list[ProfileModel]:
+    def list_profiles(self, filters: dict = None) -> list[Profile]:
         """
         profile(mobileprovision)列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_profiles
+        @param filters: 筛选器
         @return:
         """
         endpoint = '/v1/profiles'
         params = {
-            'limit': 200
+            'limit': MAX_LIMIT
         }
-        url = create_full_url(endpoint, params)
+        url = create_full_url(endpoint, params, filters)
         result_dict = self._api_call(url)
+        pprint(result_dict)
         model_list = []
-        for tmp_dict in result_dict['data']:
-            model_list.append(ProfileModel(tmp_dict))
+        for tmp_dict in result_dict.get('data', []):
+            model_list.append(Profile(tmp_dict))
         return model_list
 
-    def list_devices(self) -> list[DeviceModel]:
+    def list_devices(self, filters: dict = None) -> list[DeviceModel]:
         """
         设备列表，仅包含有效状态的设备
         https://developer.apple.com/documentation/appstoreconnectapi/list_devices
+        @param filters: 筛选器
         @return:
         """
         endpoint = '/v1/devices'
         params = {
-            'limit': 200,
+            'limit': MAX_LIMIT,
             'filter[status]': DeviceStatus.ENABLED,
             'filter[platform]': BundleIdPlatform.IOS
         }
-        url = create_full_url(endpoint, params)
+        url = create_full_url(endpoint, params, filters)
         result_dict = self._api_call(url)
         model_list = []
         for tmp_dict in result_dict['data']:
@@ -205,3 +250,17 @@ class APIAgent:
             }
         }
         self._api_call(url, method=HttpMethod.POST, post_data=post_data)
+
+
+def main():
+    token_manager = TokenManager('a6c36ebd-c946-47c0-88cb-1ed1ce336fc4', '5DHQAH5MZ5',
+                                 '/Users/shaowei/Desktop/fastlane/5DHQAH5MZ5/AuthKey_5DHQAH5MZ5.p8')
+
+    agent = APIAgent(token_manager)
+
+    from pprint import pprint
+    pprint(agent.list_profiles())
+
+
+if __name__ == '__main__':
+    main()
