@@ -24,9 +24,10 @@ def create_full_url(path: str, params: dict = None, filters: dict = None) -> str
     """
     url = urljoin(BASE_API, path)
     params = params.copy() if params else {}
+
     if filters:
-        for tmp_key, tmp_value in filters:
-            params[f'filter[tmp_key]'] = tmp_value
+        for tmp_key, tmp_value in filters.items():
+            params[f'filter[{tmp_key}]'] = tmp_value
     if params:
         return f'{url}?{urlencode(params)}'
     else:
@@ -90,6 +91,14 @@ class TokenManager:
         else:
             return self._generate_token()
 
+    def ensure_valid(self):
+        """
+        确保token有效
+        @return:
+        """
+        if not self._token_is_valid():
+            self._generate_token()
+
 
 class HttpMethod(Enum):
     GET = 1
@@ -114,13 +123,25 @@ class APIAgent:
         self.timeout = timeout
         self.token_manager = token_manager
 
-    def _api_call(self, url, method=HttpMethod.GET, post_data=None):
+    def _api_call(self, url, method=HttpMethod.GET, post_data=None, verbose=False):
+        """
+        发起请求
+        @param url: 完整的url
+        @param method: http方法类型
+        @param post_data: post类型时，传递的body参数
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        if verbose:
+            print(url)
         headers = {"Authorization": f"Bearer {self.token_manager.token}"}
 
         try:
             if method == HttpMethod.GET:
                 result = requests.get(url, headers=headers, timeout=self.timeout)
             elif method == HttpMethod.POST:
+                if verbose and post_data:
+                    print(f'post-body: {post_data}')
                 headers["Content-Type"] = "application/json"
                 result = requests.post(url=url, headers=headers, data=json.dumps(post_data),
                                        timeout=self.timeout)
@@ -137,17 +158,20 @@ class APIAgent:
 
         result.raise_for_status()
         json_info = result.json()
+        if verbose:
+            pprint(json_info)
         if 'errors' in json_info:
             error_info = json_info['errors'][0]
             raise APIError(str(error_info))
 
         return json_info
 
-    def list_bundle_id(self, filters: dict = None):
+    def list_bundle_id(self, filters: dict = None, verbose=False) -> list[BundleId]:
         """
         bundle id 列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_bundle_ids
         @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
         @return:
         """
         endpoint = '/v1/bundleIds'
@@ -155,17 +179,18 @@ class APIAgent:
             'limit': MAX_LIMIT
         }
         url = create_full_url(endpoint, params, filters)
-        result_dict = self._api_call(url)
+        result_dict = self._api_call(url, verbose=verbose)
         model_list = []
         for tmp_dict in result_dict.get('data', []):
             model_list.append(BundleId(tmp_dict))
         return model_list
 
-    def list_certificates(self, filters: dict = None):
+    def list_certificates(self, filters: dict = None, verbose=False) -> list[Certificate]:
         """
         certificate列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_certificates
         @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
         @return:
         """
         endpoint = '/v1/certificates'
@@ -173,14 +198,64 @@ class APIAgent:
             'limit': MAX_LIMIT
         }
         url = create_full_url(endpoint, params, filters)
-        result_dict = self._api_call(url)
+        result_dict = self._api_call(url, verbose=verbose)
         model_list = []
         for tmp_dict in result_dict.get('data', []):
             model_list.append(Certificate(tmp_dict))
         return model_list
 
-    def create_a_profile(self):
-        pass
+    def list_profiles(self, filters: dict = None, verbose=False) -> list[Profile]:
+        """
+        profile(mobileprovision)列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_profiles
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = '/v1/profiles'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        model_list = []
+        for tmp_dict in result_dict.get('data', []):
+            model_list.append(Profile(tmp_dict))
+        return model_list
+
+    def create_a_profile(self, attrs: ProfileCreateReqAttrs, bundle_id: DataModel,
+                         devices: list[DataModel], certificates: list[DataModel]) -> Profile:
+        """
+        创建一个新profile
+        @param attrs: profile属性信息，保留name, profileType
+        @param bundle_id: app的bundle_id
+        @param devices: 设备信息列表
+        @param certificates: cer证书信息列表
+        @return:
+        """
+        endpoint = '/v1/profiles'
+        url = create_full_url(endpoint)
+        post_data = {
+            'data': {
+                'type': 'profiles',
+                'attributes': attrs._asdict(),
+                'relationships': {
+                    'bundleId': {
+                        'data': bundle_id.req_params()
+                    },
+                    'devices': {
+                        'data': [tmp_model.req_params() for tmp_model in devices]
+                    },
+                    'certificates': {
+                        'data': [tmp_model.req_params() for tmp_model in certificates]
+                    }
+                },
+            }
+        }
+        result_dict = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
+        data_dict = result_dict.get('data', {})
+        if data_dict:
+            return Profile(data_dict)
 
     def delete_a_profile(self, profile_id: str):
         """
@@ -192,51 +267,33 @@ class APIAgent:
         url = create_full_url(endpoint)
         self._api_call(url, method=HttpMethod.DELETE)
 
-    def update_a_profile(self, src_profile: ProfileAttributes):
-        pass
-
-    def list_profiles(self, filters: dict = None) -> list[Profile]:
-        """
-        profile(mobileprovision)列表
-        https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_profiles
-        @param filters: 筛选器
-        @return:
-        """
-        endpoint = '/v1/profiles'
-        params = {
-            'limit': MAX_LIMIT
-        }
-        url = create_full_url(endpoint, params, filters)
-        result_dict = self._api_call(url)
-        pprint(result_dict)
-        model_list = []
-        for tmp_dict in result_dict.get('data', []):
-            model_list.append(Profile(tmp_dict))
-        return model_list
-
-    def list_devices(self, filters: dict = None) -> list[DeviceModel]:
+    def list_devices(self, filters: dict = None, verbose=False) -> list[Device]:
         """
         设备列表，仅包含有效状态的设备
         https://developer.apple.com/documentation/appstoreconnectapi/list_devices
         @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
         @return:
         """
         endpoint = '/v1/devices'
         params = {
-            'limit': MAX_LIMIT,
-            'filter[status]': DeviceStatus.ENABLED,
-            'filter[platform]': BundleIdPlatform.IOS
+            'limit': MAX_LIMIT
         }
+
+        # filters = {
+        #     'status': DeviceStatus.ENABLED.value,
+        #     'platform': BundleIdPlatform.IOS.value
+        # }
         url = create_full_url(endpoint, params, filters)
-        result_dict = self._api_call(url)
+        result_dict = self._api_call(url, verbose=verbose)
         model_list = []
         for tmp_dict in result_dict['data']:
-            model_list.append(DeviceModel(tmp_dict))
+            model_list.append(Device(tmp_dict))
         return model_list
 
     def register_a_device(self, device_info: DeviceCreateReqAttrs):
         """
-        注册一个设备
+        注册一个新设备
         https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_device
         @param device_info: 设备信息model
         @return:
@@ -250,17 +307,3 @@ class APIAgent:
             }
         }
         self._api_call(url, method=HttpMethod.POST, post_data=post_data)
-
-
-def main():
-    token_manager = TokenManager('a6c36ebd-c946-47c0-88cb-1ed1ce336fc4', '5DHQAH5MZ5',
-                                 '/Users/shaowei/Desktop/fastlane/5DHQAH5MZ5/AuthKey_5DHQAH5MZ5.p8')
-
-    agent = APIAgent(token_manager)
-
-    from pprint import pprint
-    pprint(agent.list_profiles())
-
-
-if __name__ == '__main__':
-    main()

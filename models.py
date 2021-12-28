@@ -38,14 +38,39 @@ class BundleIdPlatform(EnumAutoName):
     MAC_OS = auto()
 
 
-class DeviceModel:
+class DataType(EnumAutoName):
+    """data类型"""
+    bundleIds = auto()
+    devices = auto()
+    certificates = auto()
+
+
+class DataModel:
+    """通用的数据对象"""
+
+    def __init__(self, _id: str, _type: DataType):
+        self.id = _id
+        self.type = _type
+
+    def req_params(self):
+        """
+        生成 用于请求的参数信息
+        @return:
+        """
+        return {
+            'id': self.id,
+            'type': self.type
+        }
+
+
+class Device(DataModel):
     """
     设备信息
     https://developer.apple.com/documentation/appstoreconnectapi/device
     """
 
     def __init__(self, info_dict: dict):
-        self.id = info_dict['id']
+        super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
         self._attributes = attributes
@@ -83,16 +108,6 @@ class ProfileState(EnumAutoName):
     """profile的状态"""
     ACTIVE = auto()
     INVALID = auto()
-
-
-class DataType(EnumAutoName):
-    """data类型"""
-    bundleIds = auto()
-    devices = auto()
-    certificates = auto()
-
-
-DataModel = namedtuple('DataModel', 'id, type')
 
 
 class ProfileType(EnumAutoName):
@@ -156,19 +171,6 @@ class ProfileAttributes:
         return file_path
 
 
-class ProfileRelationships:
-    """profile的Relationships"""
-
-    def __init__(self, relationships: dict):
-        bundle_id_data = relationships['bundleId'].get('data', {})
-        certificates_datas = relationships['certificates'].get('data', [])
-        devices_datas = relationships['devices'].get('data', [])
-
-        self.bundleId = DataModel(**bundle_id_data) if bundle_id_data else None
-        self.certificates = [DataModel(**tmp_data) for tmp_data in certificates_datas]
-        self.devices = [DataModel(**tmp_data) for tmp_data in devices_datas]
-
-
 class Profile:
     """
     profile信息
@@ -180,18 +182,17 @@ class Profile:
         self.type = info_dict['type']
 
         self.attributes = ProfileAttributes(info_dict.get('attributes', {}))
-        self.relationships = ProfileRelationships(info_dict.get('relationships', {}))
+        # self.relationships = ProfileRelationships(info_dict.get('relationships', {}))
 
 
 BundleIdAttributes = namedtuple('BundleIdAttributes', 'identifier, name, platform, seedId')
 
 
-class BundleId:
+class BundleId(DataModel):
     """BundleId信息"""
 
     def __init__(self, info_dict: dict):
-        self.id = info_dict['id']
-        self.type = info_dict['type']
+        super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
         self.attributes = BundleIdAttributes(**attributes) if attributes else None
@@ -222,12 +223,46 @@ class CertificateAttributes:
         self.certificateType = attributes['certificateType']
 
 
-class Certificate:
+class Certificate(DataModel):
     """cer证书信息"""
 
     def __init__(self, info_dict: dict):
-        self.id = info_dict['id']
-        self.type = info_dict['type']
+        super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
         self.attributes = CertificateAttributes(attributes) if attributes else None
+
+
+# class ProfileCreateReqAttrs:
+#     """创建profile时，请求参数里的Attributes"""
+#
+#     def __init__(self, name, profile_type: ProfileType):
+#         self.name = name
+#         self.profile_type = profile_type
+#
+#     def gen_req_params(self) -> dict:
+#         """
+#         生成用于请求的参数字典
+#         @return:
+#         """
+#         return {
+#             'name': self.name,
+#             'profileType': self.profile_type
+#         }
+
+# 创建profile时，请求参数里的Attributes
+ProfileCreateReqAttrs = namedtuple('ProfileCreateReqAttrs', 'name, profileType',
+                                   defaults=[ProfileType.IOS_APP_DEVELOPMENT.value])
+
+
+class ProfileCreateReqRelationships:
+    """创建profile时，请求参数里的Relationships"""
+
+    def __init__(self, relationships: dict):
+        bundle_id_data = relationships['bundleId'].get('data', {})
+        certificates_datas = relationships['certificates'].get('data', [])
+        devices_datas = relationships['devices'].get('data', [])
+
+        self.bundleId = DataModel(**bundle_id_data) if bundle_id_data else None
+        self.certificates = [DataModel(**tmp_data) for tmp_data in certificates_datas]
+        self.devicesType = [DataModel(**tmp_data) for tmp_data in devices_datas]

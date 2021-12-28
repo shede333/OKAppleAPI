@@ -48,3 +48,4 @@ _config.txt
 /_*/
 *.log
 .python-version
+/appstoreconnect
