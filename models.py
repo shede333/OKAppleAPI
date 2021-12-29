@@ -101,7 +101,7 @@ class Device(DataModel):
 
 # 创建设备时的请求参数属性
 DeviceCreateReqAttrs = namedtuple('DeviceCreateReqAttrs', 'name, udid, platform',
-                                  defaults=[BundleIdPlatform.IOS])
+                                  defaults=[BundleIdPlatform.IOS.value])
 
 
 class ProfileState(EnumAutoName):
@@ -232,23 +232,6 @@ class Certificate(DataModel):
         attributes = info_dict.get('attributes', {})
         self.attributes = CertificateAttributes(attributes) if attributes else None
 
-
-# class ProfileCreateReqAttrs:
-#     """创建profile时，请求参数里的Attributes"""
-#
-#     def __init__(self, name, profile_type: ProfileType):
-#         self.name = name
-#         self.profile_type = profile_type
-#
-#     def gen_req_params(self) -> dict:
-#         """
-#         生成用于请求的参数字典
-#         @return:
-#         """
-#         return {
-#             'name': self.name,
-#             'profileType': self.profile_type
-#         }
 
 # 创建profile时，请求参数里的Attributes
 ProfileCreateReqAttrs = namedtuple('ProfileCreateReqAttrs', 'name, profileType',

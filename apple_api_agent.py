@@ -37,9 +37,10 @@ def create_full_url(path: str, params: dict = None, filters: dict = None) -> str
 class TokenManager:
     """token管理器"""
 
-    def __init__(self, issuer_id, key_id, key):
+    def __init__(self, issuer_id, key_id, key, valid_second=120):
         self.issuer_id = issuer_id
         self.key_id = key_id
+        self.valid_second = valid_second
 
         tmp_path = Path(key)
         if tmp_path.is_file():
@@ -58,7 +59,7 @@ class TokenManager:
         :return:
         """
         self._token_gen_date = datetime.now()
-        self._token_expired_date = self._token_gen_date + timedelta(minutes=2)
+        self._token_expired_date = self._token_gen_date + timedelta(seconds=self.valid_second)
 
         payload = {'iss': self.issuer_id,
                    'iat': int(self._token_gen_date.timestamp()),
@@ -77,7 +78,8 @@ class TokenManager:
         """
         if not self._token:
             return False
-        tmp_expired_date = self._token_expired_date - timedelta(seconds=30)
+        diff_second = 30 if (self.valid_second <= 180) else 60
+        tmp_expired_date = self._token_expired_date - timedelta(seconds=diff_second)
         return datetime.now() < tmp_expired_date
 
     @property
@@ -108,12 +110,13 @@ class HttpMethod(Enum):
 
 
 class APIError(Exception):
-    def __init__(self, error_string, status_code=None):
+    def __init__(self, error_text, error_list: list = None, status_code=None):
+        self.error_list = error_list if error_list else []
         try:
             self.status_code = int(status_code)
         except (ValueError, TypeError):
             pass
-        super().__init__(error_string)
+        super().__init__(error_text)
 
 
 class APIAgent:
@@ -156,13 +159,19 @@ class APIAgent:
         except requests.exceptions.Timeout:
             raise APIError(f"Read timeout after {self.timeout} seconds")
 
-        result.raise_for_status()
-        json_info = result.json()
+        try:
+            json_info = result.json()
+        except Exception as e:
+            json_info = {}
+
+        if not json_info:
+            result.raise_for_status()
+
         if verbose:
             pprint(json_info)
         if 'errors' in json_info:
-            error_info = json_info['errors'][0]
-            raise APIError(str(error_info))
+            errors = json_info['errors']
+            raise APIError(str(errors), error_list=list(errors), status_code=result.status_code)
 
         return json_info
 
@@ -306,4 +315,5 @@ class APIAgent:
                 'type': 'devices'
             }
         }
-        self._api_call(url, method=HttpMethod.POST, post_data=post_data)
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
+        return result
