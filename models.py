@@ -5,10 +5,13 @@ __author__ = 'shede333'
 """
 
 import base64
+import tempfile
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
+
+from mobileprovision.parser import MobileProvisionModel
 
 
 class EnumAutoName(Enum):
@@ -83,12 +86,12 @@ class Device(DataModel):
     @property
     def device_class(self) -> DeviceClass:
         """设备硬件类型"""
-        return self._attributes.get('deviceClass')
+        return DeviceClass(self._attributes.get('deviceClass'))
 
     @property
     def platform(self) -> BundleIdPlatform:
         """设备系统类型"""
-        return self._attributes.get('platform')
+        return BundleIdPlatform(self._attributes.get('platform'))
 
     @property
     def is_enable(self) -> bool:
@@ -96,7 +99,7 @@ class Device(DataModel):
         当前device是否有效
         :return:
         """
-        return self._attributes.get('status') == DeviceStatus.ENABLED
+        return DeviceStatus(self._attributes.get('status')) == DeviceStatus.ENABLED
 
 
 # 创建设备时的请求参数属性
@@ -144,10 +147,21 @@ class ProfileAttributes:
         self.expiration_date = datetime.fromisoformat(attributes.get('expirationDate'))
         self.profile_type = attributes.get('profileType')
 
+        self._mobile_provision = None
+
+    @property
+    def mobile_provision(self) -> MobileProvisionModel:
+        if not self._mobile_provision:
+            with tempfile.TemporaryDirectory() as temp_dir_path:
+                tmp_file_path = Path(temp_dir_path).joinpath('tmp.mobileprovision')
+                self.save_content(tmp_file_path)
+                self._mobile_provision = MobileProvisionModel(tmp_file_path)
+        return self._mobile_provision
+
     @property
     def platform(self) -> BundleIdPlatform:
         """设备系统类型"""
-        return self._attributes.get('platform')
+        return BundleIdPlatform(self._attributes.get('platform'))
 
     @property
     def is_active(self) -> bool:
@@ -155,7 +169,7 @@ class ProfileAttributes:
         当前device是否有效
         :return:
         """
-        return self._attributes.get('profileState') == ProfileState.ACTIVE
+        return ProfileState(self._attributes.get('profileState')) == ProfileState.ACTIVE
 
     def save_content(self, file_path: Path) -> Path:
         """
@@ -183,6 +197,10 @@ class Profile:
 
         self.attributes = ProfileAttributes(info_dict.get('attributes', {}))
         # self.relationships = ProfileRelationships(info_dict.get('relationships', {}))
+
+    @property
+    def name(self):
+        return self.attributes.name
 
 
 BundleIdAttributes = namedtuple('BundleIdAttributes', 'identifier, name, platform, seedId')
@@ -219,8 +237,10 @@ class CertificateAttributes:
     def __init__(self, attributes: dict):
         self.name = attributes['name']
         self.displayName = attributes['displayName']
-        self.platform = attributes['platform']
-        self.certificateType = attributes['certificateType']
+        tmp_platform = attributes.get('platform')  # 可能为None
+        self.platform = BundleIdPlatform(tmp_platform) if tmp_platform else None
+        self.certificate_type = CertificateType(attributes['certificateType'])
+        self.expiration_date = datetime.fromisoformat(attributes.get('expirationDate'))
 
 
 class Certificate(DataModel):
@@ -231,6 +251,10 @@ class Certificate(DataModel):
 
         attributes = info_dict.get('attributes', {})
         self.attributes = CertificateAttributes(attributes) if attributes else None
+
+    # def is_valid(self):
+    #     """是否有效，即是否在有效期内"""
+    #     return self.attributes.expiration_date < datetime.now()
 
 
 # 创建profile时，请求参数里的Attributes
