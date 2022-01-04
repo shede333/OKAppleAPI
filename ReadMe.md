@@ -1,8 +1,16 @@
 # OK App Store Connect API
 
+仅支持 >=Python3.9
+
 Apple官方API文档：<https://developer.apple.com/documentation/appstoreconnectapi>
 
 同时，也借鉴了 [appstoreconnect库](https://pypi.org/project/appstoreconnect/) 的设计；
+
+# 安装
+
+```shell
+pip3 install OKAppleAPI
+```
 
 ## 功能
 
