@@ -14,7 +14,7 @@ README = Path(__file__).resolve().with_name("ReadMe.md").read_text()
 print("{} - {}".format("*" * 10, find_packages()))
 
 setup(
-    name='OKApplePAI',  # 包名字
+    name='OKAppleAPI',  # 包名字
     version='1.0.0',  # 包版本
     author='shede333',  # 作者
     author_email='333wshw@163.com',  # 作者邮箱
