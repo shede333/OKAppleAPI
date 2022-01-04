@@ -28,7 +28,6 @@ def test_req_list():
     for tmp_cer in cer_list:
         print(f'{tmp_cer.id}, {tmp_cer.attributes.__dict__}')
     print(f"cer: {datetime.now() - flag_dot}")
-    return
 
     flag_dot = datetime.now()
     bundle_id_list = agent.list_bundle_id()
@@ -40,7 +39,9 @@ def test_req_list():
 
     flag_dot = datetime.now()
     device_list = agent.list_devices()
-    pprint(f'device_list: {device_list}')
+    # pprint(f'device_list: {device_list}')
+    for tmp_device in device_list:
+        print(tmp_device.__dict__)
     print(f"device: {datetime.now() - flag_dot}")
 
     flag_dot = datetime.now()
