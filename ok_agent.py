@@ -111,20 +111,25 @@ class OKProfileManager:
         @param is_save: 是否将新的Profile，保存到系统默认的目录下
         @return:
         """
+        print(f'\nupdate profile: {name}')
         tmp_profile = self.get_profile(name)
         if tmp_profile:
-            # 删除Profile
+            print(f'delete profile: {tmp_profile.name}')
             self.agent.delete_a_profile(tmp_profile.id)
             if not bundle_id_str:
                 bundle_id_str = tmp_profile.attributes.mobile_provision.app_id()
-        elif not bundle_id_str:
+        if not bundle_id_str:
             exp_info = f'{name} profile not exist, need bundle_id_str params to create new profile'
             raise OKProfileError(exp_info)
 
+        print(f'create profile: {name}')
         attrs = ProfileCreateReqAttrs(name)
         bundle_id = self.get_bundle_id(bundle_id_str)
+        print(f'profile bundle_id: {bundle_id.attributes.identifier}')
         device_list = self.valid_device_list
+        print(f'valid devices: {len(device_list)}')
         cer_list = self.get_cer_list(is_dev=is_dev)
+        print(f'cer: {len(cer_list)}, is_dev: {is_dev}')
         # 创建新的Profile
         result_profile = self.agent.create_a_profile(attrs=attrs, bundle_id=bundle_id,
                                                      devices=device_list, certificates=cer_list)
@@ -134,7 +139,7 @@ class OKProfileManager:
             tmp_list = filter(lambda x: x.name != name, self.profile_list)
             tmp_list = list(tmp_list).append(result_profile)
             self._profile_list = tmp_list
-
+        print(f'update profile success: {name}')
         return result_profile
 
     @staticmethod

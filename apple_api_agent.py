@@ -37,7 +37,14 @@ def create_full_url(path: str, params: dict = None, filters: dict = None) -> str
 class TokenManager:
     """token管理器"""
 
-    def __init__(self, issuer_id, key_id, key, valid_second=120):
+    def __init__(self, issuer_id: str, key_id: str, key, valid_second: int = 120):
+        """
+        初始化方法
+        @param issuer_id: issuer_id
+        @param key_id: key_id
+        @param key: key文件内容，或者key文件路径（即*.p8文件路径）
+        @param valid_second: 新生成的token的有效时间，单位：秒
+        """
         self.issuer_id = issuer_id
         self.key_id = key_id
         self.valid_second = valid_second
@@ -52,6 +59,18 @@ class TokenManager:
         self._token_expired_date = None
 
         self._token = None
+
+    @classmethod
+    def from_json(cls, json_info):
+        """
+        支持送json文件里读取配置来初始化
+        @param json_info: json配置信息内容，或者json文件路径，json参数参考TokenManager初始化方法的参数
+        @return:
+        """
+        tmp_path = Path(json_info)
+        if tmp_path.is_file():
+            json_info = json.loads(tmp_path.read_text())
+        return TokenManager(**json_info)
 
     def _generate_token(self):
         """
