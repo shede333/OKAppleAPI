@@ -6,10 +6,10 @@ __author__ = 'shede333'
 
 from apple_api_agent import APIAgent, TokenManager
 from models import *
+from pathlib import Path
 
-token_manager = TokenManager(issuer_id='a6c36ebd-c946-47c0-88cb-1ed1ce336fc4',
-                             key_id='5DHQAH5MZ5',
-                             key='/Users/shaowei/Desktop/fastlane/5DHQAH5MZ5/AuthKey_5DHQAH5MZ5.p8')
+key_path = Path('~/Desktop/appleAPIKey/api-sw/api_key.json').expanduser()
+token_manager = TokenManager.from_json(key_path)
 
 
 def test_req_list():
@@ -28,6 +28,7 @@ def test_req_list():
     for tmp_cer in cer_list:
         print(f'{tmp_cer.id}, {tmp_cer.attributes.__dict__}')
     print(f"cer: {datetime.now() - flag_dot}")
+    return
 
     flag_dot = datetime.now()
     bundle_id_list = agent.list_bundle_id()
@@ -63,10 +64,10 @@ def test_req_list():
 
 
 def test_add_device():
-    name = 'RazanHantash'
-    udid = '00008030-0009142A21E3802E'
-
     agent = APIAgent(token_manager)
+
+    name = ''
+    udid = ''
     result = agent.register_a_device(DeviceCreateReqAttrs(name, udid, BundleIdPlatform.IOS.value))
     print(result)
 
@@ -81,6 +82,8 @@ def test_ok_agent():
     from ok_agent import OKProfileManager
     ok_agent = OKProfileManager(token_manager)
     ok_agent.update_profile('test_hello', 'com.okex.OKExAppstoreFullOKSW')
+    # ok_agent.update_profile('OKCoinAppstoreOKSW-mp', 'com.okcoin.OKCoinAppstoreOKSW')
+    # ok_agent.update_profile('OKExAppstoreFullOKSW-mp', 'com.okex.OKExAppstoreFullOKSW')
 
 
 def main():
