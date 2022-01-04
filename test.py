@@ -4,8 +4,8 @@
 __author__ = 'shede333'
 """
 
-from apple_api_agent import APIAgent, TokenManager
-from models import *
+from okappleapi.apple_api_agent import APIAgent, TokenManager
+from okappleapi.models import *
 from pathlib import Path
 
 key_path = Path('~/Desktop/appleAPIKey/api-sw/api_key.json').expanduser()
@@ -18,33 +18,35 @@ def test_req_list():
     from pprint import pprint
     from datetime import datetime
 
+    # 获取token
     flag_dot = datetime.now()
-    token_manager.ensure_valid()
+    token_manager.ensure_valid()  # 此接口仅用于测试
     print(f"token: {datetime.now() - flag_dot}")
 
+    # 获取certificates列表
     flag_dot = datetime.now()
     cer_list = agent.list_certificates()
     pprint(f'cer_list: {cer_list}')
     for tmp_cer in cer_list:
         print(f'{tmp_cer.id}, {tmp_cer.attributes.__dict__}')
     print(f"cer: {datetime.now() - flag_dot}")
-    return
 
+    # 获取bundle_id列表
     flag_dot = datetime.now()
     bundle_id_list = agent.list_bundle_id()
     pprint(f'bundle_id_list: {bundle_id_list}')
     for tmp_id in bundle_id_list:
         print(f'{tmp_id.id}, {tmp_id.attributes}')
-
     print(f"bundleID: {datetime.now() - flag_dot}")
 
+    # 获取device设备列表
     flag_dot = datetime.now()
     device_list = agent.list_devices()
-    # pprint(f'device_list: {device_list}')
     for tmp_device in device_list:
         print(tmp_device.__dict__)
     print(f"device: {datetime.now() - flag_dot}")
 
+    # 获取profile列表
     flag_dot = datetime.now()
     profile_list = agent.list_profiles()
     pprint(profile_list)
@@ -59,11 +61,12 @@ def test_req_list():
                                     certificates=cer_list)
     print(f'create profile: {result.id}, {result.attributes.name}')
 
-    # 删除刚创建的
+    # 删除刚创建的profile
     test_delete_profile(result.id)
 
 
 def test_add_device():
+    """添加device"""
     agent = APIAgent(token_manager)
 
     name = ''
@@ -73,20 +76,20 @@ def test_add_device():
 
 
 def test_delete_profile(profile_id):
+    """删除一个profile"""
     agent = APIAgent(token_manager)
     print(f'delete profile: {profile_id}')
     agent.delete_a_profile(profile_id)
 
 
-def test_ok_agent():
-    from ok_agent import OKProfileManager
+def test_ok_agent(name, bundle_id_str=None,):
+    """更新一个profile"""
+    from okappleapi.ok_agent import OKProfileManager
     ok_agent = OKProfileManager(token_manager)
-    ok_agent.update_profile('test_hello', 'com.okex.OKExAppstoreFullOKSW')
-    # ok_agent.update_profile('OKCoinAppstoreOKSW-mp', 'com.okcoin.OKCoinAppstoreOKSW')
-    # ok_agent.update_profile('OKExAppstoreFullOKSW-mp', 'com.okex.OKExAppstoreFullOKSW')
+    ok_agent.update_profile(name, bundle_id_str=bundle_id_str)
 
 
-def main():
+def test_data():
     print(DeviceStatus.ENABLED.value == 'ENABLED')
     print(DeviceStatus.ENABLED == DeviceStatus('ENABLED'))
     print(DeviceStatus.ENABLED, type(DeviceStatus.ENABLED))
@@ -100,9 +103,13 @@ def main():
     print(CertificateType.IOS_DEVELOPMENT in supported_types)
     print(CertificateType.PASS_TYPE_ID in supported_types)
 
+
+def main():
+    # test_data()
     # test_req_list()
     # test_add_device()
-    test_ok_agent()
+    test_ok_agent('test_hello', 'com.oksw.hellotest')
+    pass
 
 
 if __name__ == '__main__':

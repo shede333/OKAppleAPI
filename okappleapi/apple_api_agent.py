@@ -12,7 +12,7 @@ from urllib.parse import urljoin, urlencode
 import jwt
 import requests
 
-from models import *
+from .models import *
 
 BASE_API = "https://api.appstoreconnect.apple.com"
 MAX_LIMIT = 200
@@ -87,7 +87,7 @@ class TokenManager:
         self._token = jwt.encode(payload=payload,
                                  key=self.key,
                                  headers={'kid': self.key_id, 'typ': 'JWT'},
-                                 algorithm='ES256').decode('ascii')
+                                 algorithm='ES256')
         return self._token
 
     def _token_is_valid(self):

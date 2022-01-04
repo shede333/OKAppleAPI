@@ -6,8 +6,8 @@ __author__ = 'shede333'
 
 from mobileprovision.util import import_mobileprovision
 
-from apple_api_agent import APIAgent, TokenManager
-from models import *
+from .apple_api_agent import APIAgent, TokenManager
+from .models import *
 
 
 class OKProfileError(Exception):
