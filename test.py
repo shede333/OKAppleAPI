@@ -4,11 +4,12 @@
 __author__ = 'shede333'
 """
 
-from okappleapi.apple_api_agent import APIAgent, TokenManager
-from okappleapi.models import *
 from pathlib import Path
 
-key_path = Path('~/Desktop/appleAPIKey/api-sw/api_key.json').expanduser()
+from okappleapi.apple_api_agent import APIAgent, TokenManager
+from okappleapi.models import *
+
+key_path = Path('~/Desktop/appleAPIKey/api-guojun/api_key.json').expanduser()
 token_manager = TokenManager.from_json(key_path)
 
 
@@ -65,14 +66,11 @@ def test_req_list():
     test_delete_profile(result.id)
 
 
-def test_add_device():
+def test_add_device(name, udid):
     """添加device"""
     agent = APIAgent(token_manager)
-
-    name = ''
-    udid = ''
     result = agent.register_a_device(DeviceCreateReqAttrs(name, udid, BundleIdPlatform.IOS.value))
-    print(result)
+    print(f'add device result: {result}')
 
 
 def test_delete_profile(profile_id):
@@ -82,11 +80,22 @@ def test_delete_profile(profile_id):
     agent.delete_a_profile(profile_id)
 
 
-def test_ok_agent(name, bundle_id_str=None,):
+def test_ok_agent(name, bundle_id_str=None, dst_dir=None):
     """更新一个profile"""
     from okappleapi.ok_agent import OKProfileManager
     ok_agent = OKProfileManager(token_manager)
-    ok_agent.update_profile(name, bundle_id_str=bundle_id_str)
+    profile_obj = ok_agent.update_profile(name, bundle_id_str=bundle_id_str)
+
+    if dst_dir and profile_obj:
+        dst_dir = Path(dst_dir)
+        if dst_dir.is_dir():
+            tmp_mp_file_path = Path(dst_dir).joinpath(f'{profile_obj.name}.mobileprovision')
+            tmp_mp_file_path.unlink(missing_ok=True)
+
+            profile_obj.attributes.save_content(tmp_mp_file_path)
+            print(f'mp save in: {tmp_mp_file_path}')
+        else:
+            print(f'not exist: {dst_dir}')
 
 
 def test_data():
@@ -104,12 +113,17 @@ def test_data():
     print(CertificateType.PASS_TYPE_ID in supported_types)
 
 
+def test_add_test_user():
+    test_add_device(name='xxx', udid='xxx')
+    test_ok_agent('Robot-OKExAppstoreFullOKZGJ-mp',
+                  'com.okex.OKExAppstoreFullOKZGJ',
+                  '/Users/shaowei/Downloads')
+
+
 def main():
     # test_data()
     # test_req_list()
-    # test_add_device()
-    test_ok_agent('test_hello', 'com.oksw.hellotest')
-    pass
+    test_add_test_user()
 
 
 if __name__ == '__main__':
