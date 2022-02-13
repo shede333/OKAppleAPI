@@ -15,7 +15,7 @@ print("{} - {}".format("*" * 10, find_packages()))
 
 setup(
     name='OKAppleAPI',  # 包名字
-    version='1.0.1',  # 包版本
+    version='1.1.0',  # 包版本
     author='shede333',  # 作者
     author_email='333wshw@163.com',  # 作者邮箱
     keywords='ios ok apple appstore connect api',
@@ -25,7 +25,7 @@ setup(
     url='https://github.com/shede333/OKAppleAPI',  # 包的主页
     packages=find_packages(),  # 包
     install_requires=['PyJWT~=2.0', 'PyMobileProvision~=1.4', 'requests~=2.20'],
-    python_requires="~=3.9",
+    python_requires="~=3.7",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: MIT License",

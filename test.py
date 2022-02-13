@@ -90,7 +90,8 @@ def test_ok_agent(name, bundle_id_str=None, dst_dir=None):
         dst_dir = Path(dst_dir)
         if dst_dir.is_dir():
             tmp_mp_file_path = Path(dst_dir).joinpath(f'{profile_obj.name}.mobileprovision')
-            tmp_mp_file_path.unlink(missing_ok=True)
+            if tmp_mp_file_path.is_file():
+                tmp_mp_file_path.unlink()
 
             profile_obj.attributes.save_content(tmp_mp_file_path)
             print(f'mp save in: {tmp_mp_file_path}')

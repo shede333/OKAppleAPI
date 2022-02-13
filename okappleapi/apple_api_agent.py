@@ -7,7 +7,7 @@ __author__ = 'shede333'
 import json
 from datetime import timedelta
 from pprint import pprint
-from typing import Dict
+from typing import List
 from urllib.parse import urljoin, urlencode
 
 import jwt
@@ -19,7 +19,7 @@ BASE_API = "https://api.appstoreconnect.apple.com"
 MAX_LIMIT = 200
 
 
-def create_full_url(path: str, params: dict = None, filters: dict = None) -> str:
+def create_full_url(path: str, params: Dict = None, filters: Dict = None) -> str:
     """
     创建完整的url
     """
@@ -140,7 +140,7 @@ class HttpMethod(Enum):
 
 
 class APIError(Exception):
-    def __init__(self, error_text, error_list: list = None, status_code=None):
+    def __init__(self, error_text, error_list: List = None, status_code=None):
         self.error_list = error_list if error_list else []
         try:
             self.status_code = int(status_code)
@@ -211,7 +211,7 @@ class APIAgent:
 
         return json_info
 
-    def list_bundle_id(self, filters: dict = None, verbose=False) -> list[BundleId]:
+    def list_bundle_id(self, filters: Dict = None, verbose=False) -> List[BundleId]:
         """
         bundle id 列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_bundle_ids
@@ -230,7 +230,7 @@ class APIAgent:
             model_list.append(BundleId(tmp_dict))
         return model_list
 
-    def list_certificates(self, filters: dict = None, verbose=False) -> list[Certificate]:
+    def list_certificates(self, filters: Dict = None, verbose=False) -> List[Certificate]:
         """
         certificate列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_certificates
@@ -249,7 +249,7 @@ class APIAgent:
             model_list.append(Certificate(tmp_dict))
         return model_list
 
-    def list_profiles(self, filters: dict = None, verbose=False) -> list[Profile]:
+    def list_profiles(self, filters: Dict = None, verbose=False) -> List[Profile]:
         """
         profile(mobileprovision)列表
         https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_profiles
@@ -269,7 +269,7 @@ class APIAgent:
         return model_list
 
     def create_a_profile(self, attrs: ProfileCreateReqAttrs, bundle_id: DataModel,
-                         devices: list[DataModel], certificates: list[DataModel]) -> Profile:
+                         devices: List[DataModel], certificates: List[DataModel]) -> Profile:
         """
         创建一个新profile
         @param attrs: profile属性信息，保留name, profileType
@@ -312,7 +312,7 @@ class APIAgent:
         url = create_full_url(endpoint)
         self._api_call(url, method=HttpMethod.DELETE)
 
-    def list_devices(self, filters: dict = None, verbose=False) -> list[Device]:
+    def list_devices(self, filters: Dict = None, verbose=False) -> List[Device]:
         """
         设备列表，仅包含有效状态的设备
         https://developer.apple.com/documentation/appstoreconnectapi/list_devices

@@ -10,6 +10,7 @@ from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
+from typing import Dict
 
 from mobileprovision.parser import MobileProvisionModel
 
@@ -72,7 +73,7 @@ class Device(DataModel):
     https://developer.apple.com/documentation/appstoreconnectapi/device
     """
 
-    def __init__(self, info_dict: dict):
+    def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
@@ -137,7 +138,7 @@ class ProfileAttributes:
     https://developer.apple.com/documentation/appstoreconnectapi/profile
     """
 
-    def __init__(self, attributes: dict):
+    def __init__(self, attributes: Dict):
         self._attributes = attributes
 
         self.name = attributes.get('name')
@@ -191,7 +192,7 @@ class Profile:
     https://developer.apple.com/documentation/appstoreconnectapi/profile
     """
 
-    def __init__(self, info_dict: dict):
+    def __init__(self, info_dict: Dict):
         self.id = info_dict['id']
         self.type = info_dict['type']
 
@@ -209,7 +210,7 @@ BundleIdAttributes = namedtuple('BundleIdAttributes', 'identifier, name, platfor
 class BundleId(DataModel):
     """BundleId信息"""
 
-    def __init__(self, info_dict: dict):
+    def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
@@ -234,7 +235,7 @@ class CertificateType(EnumAutoName):
 class CertificateAttributes:
     """cer Attributes"""
 
-    def __init__(self, attributes: dict):
+    def __init__(self, attributes: Dict):
         self.name = attributes['name']
         self.displayName = attributes['displayName']
         tmp_platform = attributes.get('platform')  # 可能为None
@@ -246,7 +247,7 @@ class CertificateAttributes:
 class Certificate(DataModel):
     """cer证书信息"""
 
-    def __init__(self, info_dict: dict):
+    def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
@@ -265,7 +266,7 @@ ProfileCreateReqAttrs = namedtuple('ProfileCreateReqAttrs', 'name, profileType',
 class ProfileCreateReqRelationships:
     """创建profile时，请求参数里的Relationships"""
 
-    def __init__(self, relationships: dict):
+    def __init__(self, relationships: Dict):
         bundle_id_data = relationships['bundleId'].get('data', {})
         certificates_datas = relationships['certificates'].get('data', [])
         devices_datas = relationships['devices'].get('data', [])

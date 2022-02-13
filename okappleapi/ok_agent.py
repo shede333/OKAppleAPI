@@ -4,6 +4,8 @@
 __author__ = 'shede333'
 """
 
+from typing import List
+
 from mobileprovision.util import import_mobileprovision
 
 from .apple_api_agent import APIAgent, TokenManager
@@ -27,7 +29,7 @@ class OKProfileManager:
         self._cer_list = []
 
     @property
-    def profile_list(self) -> list[Profile]:
+    def profile_list(self) -> List[Profile]:
         """
         Profile信息列表
         @return:
@@ -47,7 +49,7 @@ class OKProfileManager:
                 return tmp_profile
 
     @property
-    def bundle_id_list(self) -> list[BundleId]:
+    def bundle_id_list(self) -> List[BundleId]:
         """
         BundleId信息列表
         @return:
@@ -68,7 +70,7 @@ class OKProfileManager:
                 return tmp_bundle_id
 
     @property
-    def valid_device_list(self) -> list[Device]:
+    def valid_device_list(self) -> List[Device]:
         """
         有效的iOS设备列表
         @return:
