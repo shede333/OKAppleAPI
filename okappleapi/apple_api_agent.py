@@ -7,6 +7,7 @@ __author__ = 'shede333'
 import json
 from datetime import timedelta
 from pprint import pprint
+from typing import Dict
 from urllib.parse import urljoin, urlencode
 
 import jwt
@@ -32,6 +33,16 @@ def create_full_url(path: str, params: dict = None, filters: dict = None) -> str
         return f'{url}?{urlencode(params)}'
     else:
         return url
+
+
+def is_retry_error(error_dict: Dict):
+    """
+    此错误，是否需要重试（即重新发起请求）
+    @param error_dict:
+    @return:
+    """
+    status_code = int(error_dict.get('status', '0'))
+    return status_code in []
 
 
 class TokenManager:
@@ -72,7 +83,7 @@ class TokenManager:
             json_info = json.loads(tmp_path.read_text())
         return TokenManager(**json_info)
 
-    def _generate_token(self):
+    def renew_token(self):
         """
         生成新的token
         :return:
@@ -81,7 +92,7 @@ class TokenManager:
         self._token_expired_date = self._token_gen_date + timedelta(seconds=self.valid_second)
 
         payload = {'iss': self.issuer_id,
-                   'iat': int(self._token_gen_date.timestamp()),
+                   # 'iat': int(self._token_gen_date.timestamp()),
                    'exp': int(self._token_expired_date.timestamp()),
                    'aud': 'appstoreconnect-v1'}
         self._token = jwt.encode(payload=payload,
@@ -110,7 +121,7 @@ class TokenManager:
         if self._token_is_valid():
             return self._token
         else:
-            return self._generate_token()
+            return self.renew_token()
 
     def ensure_valid(self):
         """
@@ -118,7 +129,7 @@ class TokenManager:
         @return:
         """
         if not self._token_is_valid():
-            self._generate_token()
+            self.renew_token()
 
 
 class HttpMethod(Enum):
@@ -145,13 +156,15 @@ class APIAgent:
         self.timeout = timeout
         self.token_manager = token_manager
 
-    def _api_call(self, url, method=HttpMethod.GET, post_data=None, verbose=False):
+    def _api_call(self, url, method=HttpMethod.GET, post_data=None, verbose=False,
+                  enable_retry=True):
         """
         发起请求
         @param url: 完整的url
         @param method: http方法类型
         @param post_data: post类型时，传递的body参数
         @param verbose: 是否打印详细信息，默认False
+        @param enable_retry: 是否支持重试，默认True
         @return:
         """
         if verbose:
@@ -180,7 +193,7 @@ class APIAgent:
 
         try:
             json_info = result.json()
-        except Exception as e:
+        except Exception:
             json_info = {}
 
         if not json_info:
@@ -189,8 +202,12 @@ class APIAgent:
         if verbose:
             pprint(json_info)
         if 'errors' in json_info:
-            errors = json_info['errors']
-            raise APIError(str(errors), error_list=list(errors), status_code=result.status_code)
+            errors = list(json_info['errors'])
+            for error_dict in errors:
+                if enable_retry and is_retry_error(error_dict):
+                    return self._api_call(url=url, method=method, post_data=post_data,
+                                          verbose=verbose, enable_retry=False)
+            raise APIError(str(errors), error_list=errors, status_code=result.status_code)
 
         return json_info
 
