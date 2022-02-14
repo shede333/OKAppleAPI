@@ -6,7 +6,7 @@ Apple官方API文档：<https://developer.apple.com/documentation/appstoreconnec
 
 同时，也借鉴了 [appstoreconnect库](https://pypi.org/project/appstoreconnect/) 的设计；
 
-# 安装
+## 安装
 
 ```shell
 pip3 install OKAppleAPI
@@ -25,7 +25,7 @@ device，即设备（iPhone、iPad等），包括设备的name、UDID信息；
 * 获取device列表；
 * 注册一个新device
 
-# 使用
+## 使用
 
 ```python
 
@@ -84,3 +84,7 @@ ok_agent.update_profile(profile_name, bundle_id_str=bundle_id_str)
 
 
 ```
+
+## 待完成
+
+1. 处理所有时间的时区问题；
