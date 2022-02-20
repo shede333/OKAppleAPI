@@ -20,13 +20,18 @@ class OKProfileError(Exception):
 class OKProfileManager:
     """profile管理器，仅针对iOS系统的设备"""
 
-    def __init__(self, token_manager: TokenManager):
-        self.agent = APIAgent(token_manager)
+    def __init__(self, agent: APIAgent):
+        self.agent = agent
 
         self._profile_list = []
         self._bundle_id_list = []
         self._device_list = []
         self._cer_list = []
+
+    @classmethod
+    def from_token_manager(cls, token_manager: TokenManager):
+        agent = APIAgent(token_manager)
+        return OKProfileManager(agent)
 
     @property
     def profile_list(self) -> List[Profile]:
