@@ -44,7 +44,7 @@ def test_req_list():
     flag_dot = datetime.now()
     device_list = agent.list_devices()
     for tmp_device in device_list:
-        print(tmp_device.__dict__)
+        print(f'device info: {type(tmp_device)}, {tmp_device.__dict__}')
     print(f"device: {datetime.now() - flag_dot}")
 
     # 获取profile列表
@@ -54,7 +54,8 @@ def test_req_list():
     print(f"profile: {datetime.now() - flag_dot}")
 
     for index, tmp_profile in enumerate(profile_list, start=1):
-        print(f"profile: {index}. {tmp_profile.id}, {tmp_profile.attributes.name}")
+        print(f"profile: {index}. {tmp_profile.id}, {tmp_profile.attributes.name}, {tmp_profile.attributes.uuid}, {tmp_profile.attributes.created_date}")
+
 
     # 创建profile
     attrs = ProfileCreateReqAttrs('test_hello')
@@ -83,8 +84,11 @@ def test_delete_profile(profile_id):
 def test_ok_agent(name, bundle_id_str=None, dst_dir=None):
     """更新一个profile"""
     from okappleapi.ok_agent import OKProfileManager
-    ok_agent = OKProfileManager(token_manager)
+    ok_agent = OKProfileManager.from_token_manager(token_manager)
     profile_obj = ok_agent.update_profile(name, bundle_id_str=bundle_id_str)
+    tmp_profile = profile_obj
+    print(
+        f"profile: {tmp_profile.id}, {tmp_profile.attributes.name}, {tmp_profile.attributes.uuid}, {tmp_profile.attributes.created_date}")
 
     if dst_dir and profile_obj:
         dst_dir = Path(dst_dir)

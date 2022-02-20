@@ -79,7 +79,7 @@ from okappleapi.ok_agent import OKProfileManager
 
 profile_name = 'test_hello'
 bundle_id_str = 'com.oksw.hellotest'
-ok_agent = OKProfileManager(token_manager)
+ok_agent = OKProfileManager.from_token_manager(token_manager)
 ok_agent.update_profile(profile_name, bundle_id_str=bundle_id_str)
 
 
