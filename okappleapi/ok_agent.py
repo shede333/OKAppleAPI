@@ -21,6 +21,9 @@ class OKProfileManager:
     """profile管理器，仅针对iOS系统的设备"""
 
     def __init__(self, agent: APIAgent):
+        if isinstance(agent, TokenManager):
+            # 兼容老版本的接口
+            agent = APIAgent(agent)
         self.agent = agent
 
         self._profile_list = []
