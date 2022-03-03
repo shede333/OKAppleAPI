@@ -36,9 +36,9 @@ def create_full_url(path: str, params: Dict = None, filters: Dict = None) -> str
         return url
 
 
-def is_retry_error(code: str, status: str):
+def is_auth_error(code: str, status: str):
     """
-    此错误，是否需要重试（即重新发起请求），目前仅验证信息过期才会重新发起请求
+    用于判定是否需要重试（即重新发起请求），目前仅验证信息过期才会重新发起请求
     @param code: 错误码
     @param status: 错误文案
     @return:
@@ -159,7 +159,7 @@ class APIAgent:
         self.token_manager = token_manager
 
     def _api_call(self, url, method=HttpMethod.GET, post_data=None, verbose=False,
-                  retry_num=2, retry_judge_func=is_retry_error):
+                  retry_num=2, retry_judge_func=None):
         """
         发起请求
         @param url: 完整的url
@@ -167,7 +167,7 @@ class APIAgent:
         @param post_data: post类型时，传递的body参数
         @param verbose: 是否打印详细信息，默认False
         @param retry_num: 请求失败后，如果需要重试，重试的次数，默认重试2次
-        @param retry_judge_func: 判断是否需要重试方法，该方法需要有2个参数，2个返回值，可参考：is_retry_error
+        @param retry_judge_func: 判断是否需要重试方法，该方法需要有2个参数，2个返回值，默认为空代表返回YES
         @return:
         """
         if verbose:
@@ -211,8 +211,8 @@ class APIAgent:
                     continue
                 status = error_dict.get('status', '0')
                 code = error_dict.get('code')
-                is_retry = False
-                sleep_time = 0  # 重试前，需要等待的时间
+                is_retry = True  # 默认会重试
+                sleep_time = 1  # 默认重试前，需要等待1秒
                 if retry_judge_func:
                     is_retry, sleep_time = retry_judge_func(code=code, status=status)
                 if not is_retry:
