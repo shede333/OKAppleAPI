@@ -217,8 +217,8 @@ class APIAgent:
                     is_retry, sleep_time = retry_judge_func(code=code, status=status)
                 if not is_retry:
                     continue
-                print(f'code: {code}, status: {status}, retry_num: {retry_num}')
-                print(f'will sleep {sleep_time}s, retry url: {url}')
+                pprint(error_dict)
+                print(f'retry_num: {retry_num}, will sleep {sleep_time}s, retry url: {url}')
                 if sleep_time > 0:
                     time.sleep(sleep_time)
                 return self._api_call(url=url, method=method, post_data=post_data,
