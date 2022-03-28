@@ -159,7 +159,7 @@ class APIAgent:
         self.token_manager = token_manager
 
     def _api_call(self, url, method=HttpMethod.GET, post_data=None, verbose=False,
-                  retry_num=2, retry_judge_func=None):
+                  retry_num=2, retry_judge_func=None) -> Dict:
         """
         发起请求
         @param url: 完整的url
@@ -353,7 +353,7 @@ class APIAgent:
             model_list.append(Device(tmp_dict))
         return model_list
 
-    def register_a_device(self, device_info: DeviceCreateReqAttrs):
+    def register_a_device(self, device_info: DeviceCreateReqAttrs) -> Dict:
         """
         注册一个新设备
         https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_device
@@ -366,6 +366,30 @@ class APIAgent:
             'data': {
                 'attributes': device_info._asdict(),
                 'type': 'devices'
+            }
+        }
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
+        return result
+
+    def register_bundle_id(self, bundle_id: str, name, platform=BundleIdPlatform.IOS.value) -> Dict:
+        """
+        注册一个新的bundle_id
+        https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_bundle_id
+        @param bundle_id: 新的bundle_id
+        @param name: 新bundle_id的名字
+        @param platform: 平台类型，默认为iOS
+        @return:
+        """
+        endpoint = 'v1/bundleIds'
+        url = create_full_url(endpoint)
+        post_data = {
+            'data': {
+                'attributes': {
+                    'identifier': bundle_id,
+                    'name': name,
+                    'platform': platform
+                },
+                'type': 'bundleIds'
             }
         }
         result = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
