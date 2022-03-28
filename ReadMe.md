@@ -1,6 +1,6 @@
 # OK App Store Connect API
 
-仅支持 >=Python3.9
+仅支持 >=Python3.7
 
 Apple官方API文档：<https://developer.apple.com/documentation/appstoreconnectapi>
 
