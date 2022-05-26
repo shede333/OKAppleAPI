@@ -63,7 +63,7 @@ class TokenManager:
         self.valid_second = valid_second
 
         tmp_path = Path(key)
-        if tmp_path.is_file():
+        if (isinstance(key, str) and '-----BEGIN' not in key) and tmp_path.is_file():
             self.key = tmp_path.read_text()
         else:
             self.key = key
