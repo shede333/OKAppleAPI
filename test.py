@@ -4,13 +4,29 @@
 __author__ = 'shede333'
 """
 
-from pathlib import Path
-
 from okappleapi.apple_api_agent import APIAgent, TokenManager
 from okappleapi.models import *
 
-key_path = Path('~/Desktop/appleAPIKey/api-guojun/api_key.json').expanduser()
+key_path = Path('~/Desktop/appleAPIKey/api-OKSW/api_key.json').expanduser()
+key_path = Path('~/Desktop/appleAPIKey/api-OKHD/api_key.json').expanduser()
+# key_path = Path('~/Desktop/appleAPIKey/api-Malta/api_key.json').expanduser()
+key_path = Path('~/Desktop/appleAPIKey/api-OKMC/api_key.json').expanduser()
 token_manager = TokenManager.from_json(key_path)
+
+
+def all_account_device_num():
+    root_path = Path('~/Desktop/appleAPIKey').expanduser()
+    for dir_path in root_path.iterdir():
+        tmp_key_path = dir_path.joinpath('api_key.json')
+        if not tmp_key_path.is_file():
+            continue
+
+        account_name = dir_path.name
+        print(account_name)
+        tmp_token_manager = TokenManager.from_json(tmp_key_path)
+        tmp_agent = APIAgent(tmp_token_manager)
+        device_list = tmp_agent.list_devices()
+        print(f"{account_name}, device: {len(device_list)}")
 
 
 def test_req_list():
@@ -45,7 +61,7 @@ def test_req_list():
     device_list = agent.list_devices()
     for tmp_device in device_list:
         print(f'device info: {type(tmp_device)}, {tmp_device.__dict__}')
-    print(f"device: {datetime.now() - flag_dot}")
+    print(f"device: {datetime.now() - flag_dot}, {len(device_list)}")
 
     # 获取profile列表
     flag_dot = datetime.now()
@@ -54,8 +70,8 @@ def test_req_list():
     print(f"profile: {datetime.now() - flag_dot}")
 
     for index, tmp_profile in enumerate(profile_list, start=1):
-        print(f"profile: {index}. {tmp_profile.id}, {tmp_profile.attributes.name}, {tmp_profile.attributes.uuid}, {tmp_profile.attributes.created_date}")
-
+        print(
+            f"profile: {index}. {tmp_profile.id}, {tmp_profile.attributes.name}, {tmp_profile.attributes.uuid}, {tmp_profile.attributes.created_date}")
 
     # 创建profile
     attrs = ProfileCreateReqAttrs('test_hello')
