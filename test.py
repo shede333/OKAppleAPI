@@ -70,8 +70,11 @@ def test_req_list():
     print(f"profile: {datetime.now() - flag_dot}")
 
     for index, tmp_profile in enumerate(profile_list, start=1):
-        print(
-            f"profile: {index}. {tmp_profile.id}, {tmp_profile.attributes.name}, {tmp_profile.attributes.uuid}, {tmp_profile.attributes.created_date}")
+        p_name = tmp_profile.attributes.name
+        p_app_id = tmp_profile.attributes.mobile_provision.app_id()
+        p_uuid = tmp_profile.attributes.uuid
+        p_created_date = tmp_profile.attributes.created_date
+        print(f"profile: {index}. {tmp_profile.id}, {p_name}, {p_app_id}, {p_uuid}, {p_created_date}")
 
     # 创建profile
     attrs = ProfileCreateReqAttrs('test_hello')
