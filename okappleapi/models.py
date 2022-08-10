@@ -24,6 +24,7 @@ class DeviceStatus(EnumAutoName):
     """设备的状态"""
     ENABLED = auto()
     DISABLED = auto()
+    PROCESSING = auto()
 
 
 class DeviceClass(EnumAutoName):
