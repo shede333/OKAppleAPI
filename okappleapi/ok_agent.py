@@ -78,19 +78,26 @@ class OKProfileManager:
                 return tmp_bundle_id
 
     @property
-    def valid_device_list(self) -> List[Device]:
+    def ios_device_list(self) -> List[Device]:
         """
-        有效的iOS设备列表
-        @return:
+        iOS设备列表
         """
         if not self._device_list:
             self._device_list = self.agent.list_devices()
 
-        result = filter(lambda x: x.is_enable and x.platform == BundleIdPlatform.IOS,
-                        self._device_list)
+        result = filter(lambda x: x.platform == BundleIdPlatform.IOS, self._device_list)
         return list(result)
 
-    def get_cer_list(self, is_dev=True):
+    @property
+    def valid_device_list(self) -> List[Device]:
+        """
+        有效的iOS设备列表，即status为ENABLED的
+        @return:
+        """
+        result = filter(lambda x: x.is_enable, self.ios_device_list)
+        return list(result)
+
+    def get_cer_list(self, is_dev=True) -> List[Certificate]:
         """
         获取cer列表
         @param is_dev: 是否为iOS的dev证书，反之则为iOS的release类型，默认True
