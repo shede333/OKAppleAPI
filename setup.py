@@ -18,8 +18,8 @@ setup(
     version='1.2.5',  # 包版本
     author='shede333',  # 作者
     author_email='333wshw@163.com',  # 作者邮箱
-    keywords='ios ok apple appstore connect api',
-    description='OK AppStore Connect API',  # 简单描述
+    keywords='ios ok apple appstore app store connect api appstoreconnectapi',
+    description='OK App Store Connect API',  # 简单描述
     long_description=README,
     long_description_content_type='text/markdown',
     url='https://github.com/shede333/OKAppleAPI',  # 包的主页
