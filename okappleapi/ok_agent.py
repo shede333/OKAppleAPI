@@ -97,6 +97,15 @@ class OKProfileManager:
         result = filter(lambda x: x.is_enable, self.ios_device_list)
         return list(result)
 
+    @property
+    def invalid_device_list(self) -> List[Device]:
+        """
+        无效的iOS设备列表，status一般为PROCESSING等
+        @return:
+        """
+        result = filter(lambda x: not x.is_enable, self.ios_device_list)
+        return list(result)
+
     def get_cer_list(self, is_dev=True) -> List[Certificate]:
         """
         获取cer列表
