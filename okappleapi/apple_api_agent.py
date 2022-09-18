@@ -8,7 +8,7 @@ import json
 import time
 from datetime import timedelta
 from pprint import pprint
-from typing import List
+from typing import List, Tuple, Optional
 from urllib.parse import urljoin, urlencode
 
 import jwt
@@ -353,7 +353,8 @@ class APIAgent:
             model_list.append(Device(tmp_dict))
         return model_list
 
-    def register_a_device(self, device_info: DeviceCreateReqAttrs) -> Dict:
+    def register_a_device(self, device_info: DeviceCreateReqAttrs) -> \
+            Tuple[Dict, Optional[Device]]:
         """
         注册一个新设备
         https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_device
@@ -368,8 +369,12 @@ class APIAgent:
                 'type': 'devices'
             }
         }
+
         result = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
-        return result
+        if isinstance(result, dict) and result['data']:
+            return result, Device(result['data'])
+        else:
+            return result, None
 
     def register_bundle_id(self, bundle_id: str, name, platform=BundleIdPlatform.IOS.value) -> Dict:
         """
