@@ -25,6 +25,7 @@ class DeviceStatus(EnumAutoName):
     ENABLED = auto()
     DISABLED = auto()
     PROCESSING = auto()
+    INELIGIBLE = auto()
 
 
 class DeviceClass(EnumAutoName):

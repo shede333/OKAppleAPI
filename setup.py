@@ -15,7 +15,7 @@ print("{} - {}".format("*" * 10, find_packages()))
 
 setup(
     name='OKAppleAPI',  # 包名字
-    version='1.2.8',  # 包版本
+    version='1.2.9',  # 包版本
     author='shede333',  # 作者
     author_email='333wshw@163.com',  # 作者邮箱
     keywords='ios ok apple appstore app store connect api appstoreconnectapi',
