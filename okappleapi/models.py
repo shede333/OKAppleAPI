@@ -79,7 +79,7 @@ class Device(DataModel):
         super().__init__(info_dict['id'], info_dict['type'])
 
         attributes = info_dict.get('attributes', {})
-        self._attributes = attributes
+        self.attributes = attributes
 
         self.added_date = datetime.fromisoformat(attributes.get('addedDate'))  # 添加的日期
         self.name = attributes.get('name')
@@ -89,12 +89,17 @@ class Device(DataModel):
     @property
     def device_class(self) -> DeviceClass:
         """设备硬件类型"""
-        return DeviceClass(self._attributes.get('deviceClass'))
+        return DeviceClass(self.attributes.get('deviceClass'))
 
     @property
     def platform(self) -> BundleIdPlatform:
         """设备系统类型"""
-        return BundleIdPlatform(self._attributes.get('platform'))
+        return BundleIdPlatform(self.attributes.get('platform'))
+
+    @property
+    def status(self) -> DeviceStatus:
+        """设备状态"""
+        return DeviceStatus(self.attributes.get('status'))
 
     @property
     def is_enable(self) -> bool:
@@ -102,7 +107,7 @@ class Device(DataModel):
         当前device是否有效
         :return:
         """
-        return DeviceStatus(self._attributes.get('status')) == DeviceStatus.ENABLED
+        return DeviceStatus(self.attributes.get('status')) == DeviceStatus.ENABLED
 
 
 # 创建设备时的请求参数属性
@@ -141,7 +146,7 @@ class ProfileAttributes:
     """
 
     def __init__(self, attributes: Dict):
-        self._attributes = attributes
+        self.attributes = attributes
 
         self.name = attributes.get('name')
         self.uuid = attributes.get('uuid')
@@ -164,7 +169,7 @@ class ProfileAttributes:
     @property
     def platform(self) -> BundleIdPlatform:
         """设备系统类型"""
-        return BundleIdPlatform(self._attributes.get('platform'))
+        return BundleIdPlatform(self.attributes.get('platform'))
 
     @property
     def is_active(self) -> bool:
@@ -172,7 +177,7 @@ class ProfileAttributes:
         当前device是否有效
         :return:
         """
-        return ProfileState(self._attributes.get('profileState')) == ProfileState.ACTIVE
+        return ProfileState(self.attributes.get('profileState')) == ProfileState.ACTIVE
 
     def save_content(self, file_path: Path) -> Path:
         """
