@@ -10,7 +10,7 @@ from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 
 from mobileprovision.parser import MobileProvisionModel
 
@@ -244,11 +244,13 @@ class CertificateAttributes:
 
     def __init__(self, attributes: Dict):
         self.name = attributes['name']
-        self.displayName = attributes['displayName']
+        self.display_name = attributes['displayName']
         tmp_platform = attributes.get('platform')  # 可能为None
         self.platform = BundleIdPlatform(tmp_platform) if tmp_platform else None
         self.certificate_type = CertificateType(attributes['certificateType'])
         self.expiration_date = datetime.fromisoformat(attributes.get('expirationDate'))
+        self.serial_number = attributes.get('serialNumber', '')
+        self.certificate_content = attributes.get('certificateContent', '')
 
 
 class Certificate(DataModel):
@@ -263,6 +265,19 @@ class Certificate(DataModel):
     # def is_valid(self):
     #     """是否有效，即是否在有效期内"""
     #     return self.attributes.expiration_date < datetime.now()
+
+    def save_cer(self, cer_path: Union[Path, str]) -> bool:
+        """
+        将attributes.certificate_content内容保存为cer文件
+        @param cer_path: 保存的cer文件的路径，一般使用.cer做为扩展名
+        @return: 是否成功
+        """
+        if self.attributes.certificate_content:
+            tmp_content = base64.b64decode(self.attributes.certificate_content)
+            Path(cer_path).write_bytes(tmp_content)
+            return True
+        else:
+            return False
 
 
 # 创建profile时，请求参数里的Attributes

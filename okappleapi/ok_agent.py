@@ -3,8 +3,8 @@
 """
 __author__ = 'shede333'
 """
-
-from typing import List
+import re
+from typing import List, Optional
 
 from mobileprovision.util import import_mobileprovision
 
@@ -181,6 +181,25 @@ class OKProfileManager:
             profile.attributes.save_content(tmp_file_path)
 
             import_mobileprovision(tmp_file_path)
+
+    def create_certificates(self, csr_file_path: Union[str, Path],
+                            certificate_type: CertificateType, verbose=False) -> \
+            Optional[Certificate]:
+        """
+        请求创建签名证书
+        @param csr_file_path: csr（即certSigningRequest文件）路径
+        @param certificate_type: 证书类型
+        @param verbose: 是否打印详细信息，默认False
+        @return: Certificate证书对象
+        """
+        file_content = Path(csr_file_path).read_text()
+        # 找出 begin和end之间内容
+        pattern = '-----BEGIN[^-]+-----(.+)-----END[^-]+-----'
+        result = re.search(pattern, file_content, flags=re.DOTALL)
+        csr_content = result.group(1).replace('\n', '')  # 删除所有换行符
+
+        return self.agent.create_certificates(csr_content=csr_content,
+                                              certificate_type=certificate_type, verbose=verbose)
 
 
 def main():

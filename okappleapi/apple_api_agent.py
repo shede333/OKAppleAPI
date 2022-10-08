@@ -247,6 +247,46 @@ class APIAgent:
             model_list.append(Certificate(tmp_dict))
         return model_list
 
+    def download_certificate(self, cer_id: str, filters: Dict = None, verbose=False) \
+            -> Optional[Certificate]:
+        """
+        下载签名证书，扩展名一般为 .cer
+        @param cer_id: 证书id
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return: Certificate证书对象
+        """
+        endpoint = f'/v1/certificates/{cer_id}'
+        url = create_full_url(endpoint, filters=filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        tmp_dict = result_dict.get('data', {})
+        return Certificate(tmp_dict) if tmp_dict else None
+
+    def create_certificates(self, csr_content: str, certificate_type: CertificateType,
+                            verbose=False) -> Optional[Certificate]:
+        """
+        请求创建签名证书
+        @param csr_content: csr内容字符串（即certSigningRequest文件里 begin和end之间的内容，同时去除换行）
+        @param certificate_type: 证书类型
+        @param verbose: 是否打印详细信息，默认False
+        @return: Certificate证书对象
+        """
+        endpoint = 'v1/certificates'
+        url = create_full_url(endpoint)
+        post_data = {
+            'data': {
+                'attributes': {
+                    'csrContent': csr_content,
+                    'certificateType': certificate_type.value
+                },
+                'type': 'certificates'
+            }
+        }
+        result_dict = self._api_call(url, method=HttpMethod.POST, post_data=post_data,
+                                     verbose=verbose)
+        tmp_dict = result_dict.get('data', {})
+        return Certificate(tmp_dict) if tmp_dict else None
+
     def list_bundle_id(self, filters: Dict = None, verbose=False) -> List[BundleId]:
         """
         bundle id 列表
