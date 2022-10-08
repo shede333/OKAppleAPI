@@ -228,6 +228,25 @@ class APIAgent:
 
         return json_info
 
+    def list_certificates(self, filters: Dict = None, verbose=False) -> List[Certificate]:
+        """
+        certificate列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_certificates
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = '/v1/certificates'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        model_list = []
+        for tmp_dict in result_dict.get('data', []):
+            model_list.append(Certificate(tmp_dict))
+        return model_list
+
     def list_bundle_id(self, filters: Dict = None, verbose=False) -> List[BundleId]:
         """
         bundle id 列表
@@ -247,24 +266,29 @@ class APIAgent:
             model_list.append(BundleId(tmp_dict))
         return model_list
 
-    def list_certificates(self, filters: Dict = None, verbose=False) -> List[Certificate]:
+    def register_bundle_id(self, bundle_id: str, name, platform=BundleIdPlatform.IOS.value) -> Dict:
         """
-        certificate列表
-        https://developer.apple.com/documentation/appstoreconnectapi/list_and_download_certificates
-        @param filters: 筛选器
-        @param verbose: 是否打印详细信息，默认False
+        注册一个新的bundle_id
+        https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_bundle_id
+        @param bundle_id: 新的bundle_id
+        @param name: 新bundle_id的名字
+        @param platform: 平台类型，默认为iOS
         @return:
         """
-        endpoint = '/v1/certificates'
-        params = {
-            'limit': MAX_LIMIT
+        endpoint = 'v1/bundleIds'
+        url = create_full_url(endpoint)
+        post_data = {
+            'data': {
+                'attributes': {
+                    'identifier': bundle_id,
+                    'name': name,
+                    'platform': platform
+                },
+                'type': 'bundleIds'
+            }
         }
-        url = create_full_url(endpoint, params, filters)
-        result_dict = self._api_call(url, verbose=verbose)
-        model_list = []
-        for tmp_dict in result_dict.get('data', []):
-            model_list.append(Certificate(tmp_dict))
-        return model_list
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
+        return result
 
     def list_profiles(self, filters: Dict = None, verbose=False) -> List[Profile]:
         """
@@ -375,27 +399,3 @@ class APIAgent:
             return result, Device(result['data'])
         else:
             return result, None
-
-    def register_bundle_id(self, bundle_id: str, name, platform=BundleIdPlatform.IOS.value) -> Dict:
-        """
-        注册一个新的bundle_id
-        https://developer.apple.com/documentation/appstoreconnectapi/register_a_new_bundle_id
-        @param bundle_id: 新的bundle_id
-        @param name: 新bundle_id的名字
-        @param platform: 平台类型，默认为iOS
-        @return:
-        """
-        endpoint = 'v1/bundleIds'
-        url = create_full_url(endpoint)
-        post_data = {
-            'data': {
-                'attributes': {
-                    'identifier': bundle_id,
-                    'name': name,
-                    'platform': platform
-                },
-                'type': 'bundleIds'
-            }
-        }
-        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data)
-        return result
