@@ -439,3 +439,33 @@ class APIAgent:
             return result, Device(result['data'])
         else:
             return result, None
+
+    def modify_a_device(self, device_id: str, device_name: Optional[str] = None,
+                        device_status=DeviceStatus.ENABLED):
+        """
+        修改设备信息：name, status
+        https://developer.apple.com/documentation/appstoreconnectapi/modify_a_registered_device
+        @param device_id: 设备id
+        @param device_name: 设备名称，不传此值代表 不修改此值
+        @param device_status: 设备的状态值，仅支持"ENABLED, DISABLED"，默认为ENABLE
+        @return:
+        """
+        device_info = {'status': device_status.value}
+        if device_name:
+            device_info['name'] = device_name
+
+        endpoint = f'/v1/devices/{device_id}'
+        url = create_full_url(endpoint)
+        post_data = {
+            'data': {
+                'attributes': device_info,
+                'id': device_id,
+                'type': 'devices'
+            }
+        }
+
+        result = self._api_call(url, method=HttpMethod.PATCH, post_data=post_data)
+        if isinstance(result, dict) and result['data']:
+            return result, Device(result['data'])
+        else:
+            return result, None
