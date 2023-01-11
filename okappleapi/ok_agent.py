@@ -4,7 +4,7 @@
 __author__ = 'shede333'
 """
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from mobileprovision.util import import_mobileprovision
 
@@ -13,6 +13,11 @@ from .models import *
 
 
 class OKProfileError(Exception):
+    def __init__(self, error_text):
+        super().__init__(error_text)
+
+
+class OKBundleIdError(Exception):
     def __init__(self, error_text):
         super().__init__(error_text)
 
@@ -182,13 +187,12 @@ class OKProfileManager:
 
             import_mobileprovision(tmp_file_path)
 
-    def create_certificates(self, csr_file_path: Union[str, Path],
-                            certificate_type: CertificateType, verbose=False) -> \
-            Optional[Certificate]:
+    def create_certificates(self, csr_file_path: Union[str, Path], certificate_type: str,
+                            verbose=False) -> Optional[Certificate]:
         """
         请求创建签名证书
         @param csr_file_path: csr（即certSigningRequest文件）路径
-        @param certificate_type: 证书类型
+        @param certificate_type: 证书类型，CertificateType枚举类型对应的字符串
         @param verbose: 是否打印详细信息，默认False
         @return: Certificate证书对象
         """
@@ -200,6 +204,51 @@ class OKProfileManager:
 
         return self.agent.create_certificates(csr_content=csr_content,
                                               certificate_type=certificate_type, verbose=verbose)
+
+    def _id_from_bundle_id(self, bundle_id: str):
+        """
+        获取bundle_id对应的 内部id
+        @param bundle_id: bundle_id
+        @return:
+        """
+        inner_id = ''
+        for id_obj in self.bundle_id_list:
+            if id_obj.attributes.identifier == bundle_id:
+                inner_id = id_obj.id
+                break
+        if not inner_id:
+            raise OKBundleIdError(f'bundle_id({bundle_id}) is not exist!')
+        return inner_id
+
+    def bundle_id_capabilities(self, bundle_id: str, filters: Dict = None,
+                               verbose=False) -> List[BundleIdCapability]:
+        """
+        设备列表，仅包含有效状态的设备
+        @param bundle_id: bundle_id
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        inner_bundle_id = self._id_from_bundle_id(bundle_id)
+        return self.agent.bundle_id_capabilities(inner_bundle_id=inner_bundle_id, filters=filters,
+                                                 verbose=verbose)
+
+    def enable_a_capabilities(self, bundle_id: str, capability_type: str,
+                              settings: Optional[List] = None, verbose=False) -> \
+            Tuple[Dict, Optional[BundleIdCapability]]:
+        """
+        开始 bundleID 对应的一个能力
+        https://developer.apple.com/documentation/appstoreconnectapi/enable_a_capability
+        @param bundle_id: bundle_id
+        @param capability_type: CapabilityType类型对应的字符串
+        @param settings: （可选）设置信息列表，见：https://developer.apple.com/documentation/appstoreconnectapi/capabilitysetting
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        inner_bundle_id = self._id_from_bundle_id(bundle_id)
+        return self.agent.enable_a_capabilities(inner_bundle_id=inner_bundle_id,
+                                                capability_type=capability_type,
+                                                settings=settings, verbose=verbose)
 
 
 def main():

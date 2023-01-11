@@ -296,3 +296,53 @@ class ProfileCreateReqRelationships:
         self.bundleId = DataModel(**bundle_id_data) if bundle_id_data else None
         self.certificates = [DataModel(**tmp_data) for tmp_data in certificates_datas]
         self.devicesType = [DataModel(**tmp_data) for tmp_data in devices_datas]
+
+
+class CapabilityType(EnumAutoName):
+    """bundleId的能力的类型, https://developer.apple.com/documentation/appstoreconnectapi/capabilitytype"""
+    ICLOUD = auto()
+    IN_APP_PURCHASE = auto()
+    GAME_CENTER = auto()
+    PUSH_NOTIFICATIONS = auto()
+    WALLET = auto()
+    INTER_APP_AUDIO = auto()
+    MAPS = auto()
+    ASSOCIATED_DOMAINS = auto()
+    PERSONAL_VPN = auto()
+    APP_GROUPS = auto()
+    HEALTHKIT = auto()
+    HOMEKIT = auto()
+    WIRELESS_ACCESSORY_CONFIGURATION = auto()
+    APPLE_PAY = auto()
+    DATA_PROTECTION = auto()
+    SIRIKIT = auto()
+    NETWORK_EXTENSIONS = auto()
+    MULTIPATH = auto()
+    HOT_SPOT = auto()
+    NFC_TAG_READING = auto()
+    CLASSKIT = auto()
+    AUTOFILL_CREDENTIAL_PROVIDER = auto()
+    ACCESS_WIFI_INFORMATION = auto()
+    NETWORK_CUSTOM_PROTOCOL = auto()
+    COREMEDIA_HLS_LOW_LATENCY = auto()
+    SYSTEM_EXTENSION_INSTALL = auto()
+    USER_MANAGEMENT = auto()
+    APPLE_ID_AUTH = auto()
+
+
+BundleIdCapabilityAttributes = namedtuple('BundleIdCapabilityAttributes',
+                                          'capabilityType, settings')
+
+
+# BundleIdCapabilityAttrSettingItem = namedtuple('BundleIdCapabilityAttrSettingItem',
+#                                                'key, options')
+
+
+class BundleIdCapability(DataModel):
+    """BundleId Capability信息"""
+
+    def __init__(self, info_dict: Dict):
+        super().__init__(info_dict['id'], info_dict['type'])
+
+        attributes = info_dict.get('attributes', {})
+        self.attributes = BundleIdCapabilityAttributes(**attributes) if attributes else None

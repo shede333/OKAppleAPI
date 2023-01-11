@@ -20,7 +20,8 @@ BASE_API = "https://api.appstoreconnect.apple.com"
 MAX_LIMIT = 200
 
 
-def create_full_url(path: str, params: Dict = None, filters: Dict = None) -> str:
+def create_full_url(path: str, params: Dict = None, filters: Dict = None,
+                    fields: Dict = None) -> str:
     """
     创建完整的url
     """
@@ -30,6 +31,9 @@ def create_full_url(path: str, params: Dict = None, filters: Dict = None) -> str
     if filters:
         for tmp_key, tmp_value in filters.items():
             params[f'filter[{tmp_key}]'] = tmp_value
+    if fields:
+        for tmp_key, tmp_value in fields.items():
+            params[f'fields[{tmp_key}]'] = tmp_value
     if params:
         return f'{url}?{urlencode(params)}'
     else:
@@ -262,17 +266,20 @@ class APIAgent:
         tmp_dict = result_dict.get('data', {})
         return Certificate(tmp_dict) if tmp_dict else None
 
-    def create_certificates(self, csr_content: str, certificate_type: CertificateType,
+    def create_certificates(self, csr_content: str, certificate_type: str,
                             verbose=False) -> Optional[Certificate]:
         """
         请求创建签名证书
+        https://developer.apple.com/documentation/appstoreconnectapi/create_a_certificate
         @param csr_content: csr内容字符串（即certSigningRequest文件里 begin和end之间的内容，同时去除换行）
-        @param certificate_type: 证书类型
+        @param certificate_type: 证书类型，CertificateType枚举类型对应的字符串
         @param verbose: 是否打印详细信息，默认False
         @return: Certificate证书对象
         """
         endpoint = 'v1/certificates'
         url = create_full_url(endpoint)
+        if isinstance(certificate_type, CertificateType):
+            certificate_type = certificate_type.value  # 兼容老接口的参数
         post_data = {
             'data': {
                 'attributes': {
@@ -353,6 +360,7 @@ class APIAgent:
                          devices: List[DataModel], certificates: List[DataModel]) -> Profile:
         """
         创建一个新profile
+        https://developer.apple.com/documentation/appstoreconnectapi/create_a_profile
         @param attrs: profile属性信息，保留name, profileType
         @param bundle_id: app的bundle_id
         @param devices: 设备信息列表
@@ -386,6 +394,7 @@ class APIAgent:
     def delete_a_profile(self, profile_id: str):
         """
         删除一个profile证书
+        https://developer.apple.com/documentation/appstoreconnectapi/delete_a_profile
         @param profile_id: 证书ID
         @return:
         """
@@ -469,3 +478,71 @@ class APIAgent:
             return result, Device(result['data'])
         else:
             return result, None
+
+    def bundle_id_capabilities(self, inner_bundle_id: str, filters: Dict = None,
+                               verbose=False) -> List[BundleIdCapability]:
+        """
+        设备列表，仅包含有效状态的设备
+        https://developer.apple.com/documentation/appstoreconnectapi/list_all_capabilities_for_a_bundle_id
+        @param inner_bundle_id: BundleId的内部id
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = f'/v1/bundleIds/{inner_bundle_id}/bundleIdCapabilities'
+        url = create_full_url(endpoint, filters=filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        model_list = []
+        for tmp_dict in result_dict.get('data', []):
+            model_list.append(BundleIdCapability(tmp_dict))
+        return model_list
+
+    def enable_a_capabilities(self, inner_bundle_id: str, capability_type: str,
+                              settings: Optional[List] = None, verbose=False) -> \
+            Tuple[Dict, Optional[BundleIdCapability]]:
+        """
+        开始 bundleID 对应的一个能力
+        https://developer.apple.com/documentation/appstoreconnectapi/enable_a_capability
+        @param inner_bundle_id: BundleId的内部id
+        @param capability_type: CapabilityType类型对应的字符串
+        @param settings: （可选）设置信息列表，见：https://developer.apple.com/documentation/appstoreconnectapi/capabilitysetting
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = '/v1/bundleIdCapabilities'
+        url = create_full_url(endpoint)
+
+        attributes = {'capabilityType': capability_type}
+        if settings:
+            attributes['settings'] = settings
+        post_data = {
+            'data': {
+                'attributes': attributes,
+                'relationships': {
+                    'bundleId': {
+                        'data': {
+                            'id': inner_bundle_id,
+                            'type': 'bundleIds'
+                        }
+                    }
+                },
+                'type': 'bundleIdCapabilities'
+            }
+        }
+
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data, verbose=verbose)
+        if isinstance(result, dict) and result['data']:
+            return result, BundleIdCapability(result['data'])
+        else:
+            return result, None
+
+    def disable_a_capabilities(self, capability_id: str):
+        """
+        删除bundleId的一个 capability/能力
+        https://developer.apple.com/documentation/appstoreconnectapi/disable_a_capability
+        @param capability_id: 代表capability的id
+        @return:
+        """
+        endpoint = f'/v1/bundleIdCapabilities/{capability_id}'
+        url = create_full_url(endpoint)
+        self._api_call(url, method=HttpMethod.DELETE)
