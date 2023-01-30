@@ -284,7 +284,7 @@ class APIAgent:
             'data': {
                 'attributes': {
                     'csrContent': csr_content,
-                    'certificateType': certificate_type.value
+                    'certificateType': certificate_type
                 },
                 'type': 'certificates'
             }
