@@ -77,6 +77,7 @@ class Device(DataModel):
 
     def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
 
         attributes = info_dict.get('attributes', {})
         self.attributes = attributes
@@ -146,6 +147,7 @@ class ProfileAttributes:
     """
 
     def __init__(self, attributes: Dict):
+        self.info_dict = attributes
         self.attributes = attributes
 
         self.name = attributes.get('name')
@@ -200,6 +202,7 @@ class Profile:
     """
 
     def __init__(self, info_dict: Dict):
+        self.info_dict = info_dict
         self.id = info_dict['id']
         self.type = info_dict['type']
 
@@ -219,6 +222,7 @@ class BundleId(DataModel):
 
     def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
 
         attributes = info_dict.get('attributes', {})
         self.attributes = BundleIdAttributes(**attributes) if attributes else None
@@ -243,6 +247,8 @@ class CertificateAttributes:
     """cer Attributes"""
 
     def __init__(self, attributes: Dict):
+        self.info_dict = attributes
+
         self.name = attributes['name']
         self.display_name = attributes['displayName']
         tmp_platform = attributes.get('platform')  # 可能为None
@@ -258,6 +264,7 @@ class Certificate(DataModel):
 
     def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
 
         attributes = info_dict.get('attributes', {})
         self.attributes = CertificateAttributes(attributes) if attributes else None
@@ -289,6 +296,7 @@ class ProfileCreateReqRelationships:
     """创建profile时，请求参数里的Relationships"""
 
     def __init__(self, relationships: Dict):
+        self.info_dict = relationships
         bundle_id_data = relationships['bundleId'].get('data', {})
         certificates_datas = relationships['certificates'].get('data', [])
         devices_datas = relationships['devices'].get('data', [])
@@ -343,6 +351,7 @@ class BundleIdCapability(DataModel):
 
     def __init__(self, info_dict: Dict):
         super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
 
         attributes = info_dict.get('attributes', {})
         self.attributes = BundleIdCapabilityAttributes(**attributes) if attributes else None
