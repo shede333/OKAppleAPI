@@ -167,8 +167,8 @@ class OKProfileManager:
         if result_profile:
             if is_save:
                 self.save_mobile_provision(result_profile)
-            tmp_list = filter(lambda x: x.name != name, self.profile_list)
-            tmp_list = list(tmp_list).append(result_profile)
+            tmp_list = list(filter(lambda x: x.name != name, self.profile_list))
+            tmp_list.append(result_profile)
             self._profile_list = tmp_list
         print(f'update profile success: {name}')
         return result_profile
