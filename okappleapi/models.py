@@ -37,6 +37,47 @@ class DeviceClass(EnumAutoName):
     APPLE_TV = auto()
     MAC = auto()
 
+class ScreenshotDisplayType(EnumAutoName):
+    """截图尺寸类型"""
+    APP_IPHONE_67 = auto()
+    APP_IPHONE_65 = auto()
+    APP_IPHONE_61 = auto()
+    APP_IPHONE_58 = auto()
+    APP_IPHONE_55 = auto()
+    APP_IPHONE_47 = auto()
+    APP_IPHONE_40 = auto()
+    APP_IPHONE_35 = auto()
+    APP_IPAD_PRO_3GEN_129 = auto()
+    APP_IPAD_PRO_3GEN_11 = auto()
+    APP_IPAD_PRO_129 = auto()
+    APP_IPAD_105 = auto()
+    APP_IPAD_97 = auto()
+    APP_WATCH_ULTRA = auto()
+    APP_WATCH_SERIES_7 = auto()
+    APP_WATCH_SERIES_4 = auto()
+    APP_WATCH_SERIES_3 = auto()
+    APP_DESKTOP = auto()
+    APP_APPLE_TV = auto()
+    IMESSAGE_APP_IPHONE_67 = auto()
+    IMESSAGE_APP_IPHONE_65 = auto()
+    IMESSAGE_APP_IPHONE_61 = auto()
+    IMESSAGE_APP_IPHONE_58 = auto()
+    IMESSAGE_APP_IPHONE_55 = auto()
+    IMESSAGE_APP_IPHONE_47 = auto()
+    IMESSAGE_APP_IPHONE_40 = auto()
+    IMESSAGE_APP_IPAD_PRO_3GEN_129 = auto()
+    IMESSAGE_APP_IPAD_PRO_3GEN_11 = auto()
+    IMESSAGE_APP_IPAD_PRO_129 = auto()
+    IMESSAGE_APP_IPAD_105 = auto()
+    IMESSAGE_APP_IPAD_97 = auto()
+    APP_APPLE_VISION_PRO = auto()
+
+class AppScreenshotState(EnumAutoName):
+    """单个截图的上传状态的状态"""
+    AWAITING_UPLOAD = auto()
+    UPLOAD_COMPLETE = auto()
+    COMPLETE = auto()
+    FAILED = auto()
 
 class BundleIdPlatform(EnumAutoName):
     """设备系统类型"""
@@ -58,6 +99,16 @@ class DataModel:
         self.id = _id
         self.type = _type
 
+    @classmethod
+    def from_dict(cls, info_dict: Dict):
+        """
+        从字典中创建对象
+        @param info_dict:
+        @return:
+        """
+        _id = info_dict.get('id')
+        _type = info_dict.get('type')
+        return cls(_id, _type)
     def req_params(self):
         """
         生成 用于请求的参数信息
@@ -355,3 +406,38 @@ class BundleIdCapability(DataModel):
 
         attributes = info_dict.get('attributes', {})
         self.attributes = BundleIdCapabilityAttributes(**attributes) if attributes else None
+
+class AppInfoLocalization(DataModel):
+    """
+    AppInfoLocalization信息
+    https://developer.apple.com/documentation/appstoreconnectapi/appinfolocalization
+    """
+
+    def __init__(self, info_dict: Dict):
+        super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
+        self.locale = info_dict.get('attributes', {}).get('locale')
+
+class AppScreenshotSet(DataModel):
+    """
+    AppScreenshotSet信息
+    https://developer.apple.com/documentation/appstoreconnectapi/appscreenshotset
+    """
+
+    def __init__(self, info_dict: Dict):
+        super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
+        self.screenshotTypeString = info_dict.get('attributes', {}).get('screenshotDisplayType', '')
+
+class AppScreenshot(DataModel):
+    """
+    AppScreenshot信息
+    https://developer.apple.com/documentation/appstoreconnectapi/appscreenshot
+    """
+
+    def __init__(self, info_dict: Dict):
+        super().__init__(info_dict['id'], info_dict['type'])
+        self.info_dict = info_dict
+        self.attributes = info_dict.get('attributes', {})
+        state = self.attributes.get('assetDeliveryState', {}).get('state', '')
+        self.updateState = AppScreenshotState[state] if state else AppScreenshotState.FAILED
