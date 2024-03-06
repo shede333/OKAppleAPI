@@ -4,8 +4,10 @@
 __author__ = 'shede333'
 """
 
+import os
 import json
 import time
+import hashlib
 from datetime import timedelta
 from pprint import pprint
 from typing import List, Tuple, Optional
@@ -143,6 +145,7 @@ class HttpMethod(Enum):
     POST = 2
     PATCH = 3
     DELETE = 4
+    PUT = 5
 
 
 class APIError(Exception):
@@ -162,7 +165,7 @@ class APIAgent:
         self.timeout = timeout
         self.token_manager = token_manager
 
-    def _api_call(self, url, method=HttpMethod.GET, post_data=None, verbose=False,
+    def _api_call(self, url, method=HttpMethod.GET, headers=None, post_data=None, verbose=False,
                   retry_num=2, retry_judge_func=None) -> Dict:
         """
         发起请求
@@ -176,7 +179,8 @@ class APIAgent:
         """
         if verbose:
             print(url)
-        headers = {"Authorization": f"Bearer {self.token_manager.token}"}
+        headers = headers if headers else {}
+        headers["Authorization"] = f"Bearer {self.token_manager.token}"
 
         try:
             if method == HttpMethod.GET:
@@ -193,6 +197,8 @@ class APIAgent:
                                         timeout=self.timeout)
             elif method == HttpMethod.DELETE:
                 result = requests.delete(url=url, headers=headers, timeout=self.timeout)
+            elif method == HttpMethod.PUT:
+                result = requests.put(url=url, headers=headers, data=post_data, timeout=self.timeout)
             else:
                 raise APIError("Unknown HTTP method")
         except requests.exceptions.Timeout:
@@ -546,3 +552,281 @@ class APIAgent:
         endpoint = f'/v1/bundleIdCapabilities/{capability_id}'
         url = create_full_url(endpoint)
         self._api_call(url, method=HttpMethod.DELETE)
+
+    def list_apps(self, filters: Dict = None, verbose=False) -> List[DataModel]:
+        """
+        App列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_apps
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = '/v1/apps'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        app_list = []
+        for tmp_dict in result_dict['data']:
+            app_list.append(DataModel.from_dict(tmp_dict))
+        return app_list
+    
+    def list_app_info_for_app(self, id: str, filters: Dict = None, verbose=False) -> List[DataModel]:
+        """
+        App信息列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_all_app_infos_for_an_app
+        @param id: App的内部id(例如：list_apps接口中获取到的id)
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = f'/v1/apps/{id}/appInfos'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        app_list = []
+        for tmp_dict in result_dict['data']:
+            app_list.append(DataModel.from_dict(tmp_dict))
+        return app_list
+    
+    def list_appstore_version(self, id: str, filters: Dict = None, verbose=False) -> List[DataModel]:
+        """
+        App提审版本列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_all_app_store_version_localizations_for_an_app_store_version
+        @param id: App信息id(例如：list_app_info_for_app接口中获取到的id)
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = f'/v1/apps/{id}/appStoreVersions'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        list = []
+        for tmp_dict in result_dict['data']:
+            list.append(DataModel.from_dict(tmp_dict))
+        return list
+    
+    def list_localization(self, id: str, filters: Dict = None, verbose=False) -> List[AppInfoLocalization]:
+        """
+        App提审版本的本地化信息列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_all_app_store_version_localizations_for_an_app_store_version
+        @param id: App提审版本id(例如：list_appstore_version接口中获取到的id)
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = f'/v1/appStoreVersions/{id}/appStoreVersionLocalizations'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params, filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        list = []
+        for tmp_dict in result_dict['data']:
+            list.append(AppInfoLocalization(tmp_dict))
+        return list
+    
+    def create_localization(self, id: str, locale: str, verbose=False) -> AppInfoLocalization:
+        """
+        创建App提审版本的本地化信息
+        https://developer.apple.com/documentation/appstoreconnectapi/create_an_app_store_version_localization
+        @param id: App提审版本id(例如：list_appstore_version接口中获取到的id)
+        @param locale: 语言代码（例如：zh-Hans， en-US）
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = '/v1/appStoreVersionLocalizations'
+        post_data = {
+            'data': {
+                'type': 'appInfoLocalizations',
+                'attributes': {
+                    'locale': locale
+                },
+                'relationships': {
+                    'appStoreVersion': {
+                        'data': {
+                            'id': id,
+                            'type': 'appStoreVersions'
+                        }
+                    }
+                }
+            }
+        }
+        url = create_full_url(endpoint)
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data, verbose=verbose)
+        data = result.get('data', {})
+        if data:
+            return AppInfoLocalization(data)
+        
+    def list_app_screenshot_set(self, id: str, filters: Dict = None, verbose=False) -> List[AppScreenshotSet]:
+        """
+        App提审版本的本地化信息中的截图集列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_all_app_screenshot_sets_for_an_app_store_version_localization
+        @param id: 本地化信息id(例如：list_localization接口中获取到的id)
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = f'/v1/appStoreVersionLocalizations/{id}/appScreenshotSets'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params=params, filters=filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        list = []
+        for tmp_dict in result_dict['data']:
+            list.append(AppScreenshotSet(tmp_dict))
+        return list
+    
+    def create_app_screenshot_set(self, id: str, screenshotType: ScreenshotDisplayType, verbose=False) -> AppScreenshotSet:
+        """创建App截图集"""
+        """
+        App提审版本的本地化信息中的截图集列表
+        https://developer.apple.com/documentation/appstoreconnectapi/create_an_app_screenshot_set
+        @param id: 本地化信息id(例如：list_localization接口中获取到的id)
+        @param screenshotType: 截图集标识（枚举值。具体：https://developer.apple.com/documentation/appstoreconnectapi/screenshotdisplaytype）
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = '/v1/appScreenshotSets'
+        post_data = {
+            'data': {
+                'type': 'appScreenshotSets',
+                'attributes': {
+                    'screenshotDisplayType': screenshotType.name
+                },
+                'relationships': {
+                    'appStoreVersionLocalization': {
+                        'data': {
+                            'id': id,
+                            'type': 'appStoreVersionLocalizations'
+                        }
+                    }
+                }
+            }
+        }
+        url = create_full_url(endpoint)
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data, verbose=verbose)
+        data = result.get('data', {})
+        if data:
+            return AppScreenshotSet(data)
+        
+    def list_app_screenshot(self, id: str, filters: Dict = None, verbose=False) -> List[AppScreenshot]:
+        """
+        截图集中所有截图列表
+        https://developer.apple.com/documentation/appstoreconnectapi/list_all_app_screenshots_for_an_app_screenshot_set
+        @param id: 截图集id(例如：list_app_screenshot_set接口中获取到的id)
+        @param filters: 筛选器
+        @param verbose: 是否打印详细信息，默认False
+        @return:
+        """
+        endpoint = f'/v1/appScreenshotSets/{id}/appScreenshots'
+        params = {
+            'limit': MAX_LIMIT
+        }
+        url = create_full_url(endpoint, params=params, filters=filters)
+        result_dict = self._api_call(url, verbose=verbose)
+        list = []
+        for tmp_dict in result_dict['data']:
+            list.append(AppScreenshot(tmp_dict))
+        return list
+    
+    def delete_app_screenshot(self, id: str, verbose=False):
+        """
+        删除App截图集中的某个截图
+        https://developer.apple.com/documentation/appstoreconnectapi/delete_an_app_screenshot
+        @param id: 截图id(例如：list_app_screenshott接口中获取到的id)
+        @param verbose: 是否打印详细信息，默认False
+        @return: 
+        """
+        if not id:
+            return 
+        endpoint = f'/v1/appScreenshots/{id}'
+        url = create_full_url(endpoint)
+        self._api_call(url, method=HttpMethod.DELETE, verbose=verbose)
+
+    def create_app_screenshot(self, id: str, file_path: str, verbose=False) -> AppScreenshot:
+        """
+        在截图集中创建一个App截图
+        https://developer.apple.com/documentation/appstoreconnectapi/create_an_app_screenshot
+        @param id: 截图集id(例如：list_app_screenshot_set接口中获取到的id)
+        @param verbose: 是否打印详细信息，默认False
+        @return: 
+        """
+        endpoint = f'/v1/appScreenshots'
+        post_data = {
+            'data': {
+                'type': 'appScreenshots',
+                'attributes': {
+                    'fileName': os.path.basename(file_path),
+                    'fileSize': os.path.getsize(file_path)
+                },
+                'relationships': {
+                    'appScreenshotSet': {
+                        'data': {
+                            'id': id,
+                            'type': 'appScreenshotSets'
+                        }
+                    }
+                }
+            }
+        }
+        url = create_full_url(endpoint)
+        result = self._api_call(url, method=HttpMethod.POST, post_data=post_data, verbose=verbose)
+        data = result.get('data', {})
+        if data:
+            return AppScreenshot(data)
+    
+    def upload_app_screenshot(self, screenshot: AppScreenshot, file_path: str, verbose=False):
+        """
+        上传一个App截图
+        https://developer.apple.com/documentation/appstoreconnectapi/uploading_assets_to_app_store_connect
+        @param id: 截图集id(例如：list_app_screenshot_set接口中获取到的id)
+        @param verbose: 是否打印详细信息，默认False)
+        @return:
+        """
+        # 获取上传URL
+        upload_operations = screenshot.attributes['uploadOperations']
+        if not upload_operations:
+            raise ValueError(f'获取截图上传URL失败')
+        for upload_operation in upload_operations:
+            # 分片上传
+            with open(file_path, mode='rb') as file:
+                file.seek(upload_operation['offset'])
+                data = file.read(upload_operation['length'])
+
+            url = upload_operation['url']
+            method = HttpMethod[upload_operation['method']]
+            headers={h['name']: h['value'] for h in upload_operation['requestHeaders']}
+            self._api_call(url, method=method, headers=headers, post_data=data, verbose=verbose)
+    
+    def verify_app_screenshot(self, id: str, file_path: str, verbose=False) -> AppScreenshotState:
+        """
+        验证App截图集
+        https://developer.apple.com/documentation/appstoreconnectapi/verify_an_app_screenshot_set
+        @param id: 截图id(例如：create_app_screenshot接口中获取到的id)
+        @param verbose: 是否打印详细信息，默认False
+        @return: AWAITING_UPLOAD, UPLOAD_COMPLETE, COMPLETE, FAILED
+        """
+        endpoint = f'/v1/appScreenshots/{id}'
+        post_data = {
+            "data": {
+                "type": "appScreenshots",
+                "id": id,
+                "attributes": {
+                    "uploaded": True,
+                    "sourceFileChecksum": hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+                }
+            }
+        }
+        url = create_full_url(endpoint)
+        result_dict = self._api_call(url, method=HttpMethod.PATCH, post_data=post_data, verbose=verbose)
+        data = result_dict.get('data', {})
+        if data:
+            return AppScreenshot(data).updateState
