@@ -83,6 +83,7 @@ class BundleIdPlatform(EnumAutoName):
     """设备系统类型"""
     IOS = auto()
     MAC_OS = auto()
+    UNIVERSAL = auto()
 
 
 class DataType(EnumAutoName):
